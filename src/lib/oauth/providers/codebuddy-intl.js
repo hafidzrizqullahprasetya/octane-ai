@@ -1,5 +1,19 @@
 import { CODEBUDDY_INTL_CONFIG } from "../constants/oauth.js";
 
+function extractUserInfo(accessToken) {
+  try {
+    if (!accessToken || typeof accessToken !== "string") return {};
+    const parts = accessToken.split(".");
+    if (parts.length < 2) return {};
+    const payload = JSON.parse(Buffer.from(parts[1], "base64").toString("utf-8"));
+    const email = payload.email || (payload.preferred_username?.includes("@") ? payload.preferred_username : null);
+    const displayName = payload.name || payload.preferred_username || email || null;
+    return { email, displayName };
+  } catch {
+    return {};
+  }
+}
+
 // CodeBuddy International — mirrors codebuddy-cn flow against the .ai domain.
 const codebuddyIntl = {
   config: CODEBUDDY_INTL_CONFIG,
@@ -63,12 +77,17 @@ const codebuddyIntl = {
     if (data.code === 11217) return { ok: true, data: { error: "authorization_pending" } };
     return { ok: false, data: { error: data.msg || "unknown_error" } };
   },
-  mapTokens: (tokens) => ({
-    accessToken: tokens.access_token,
-    refreshToken: tokens.refresh_token,
-    expiresIn: tokens.expires_in || 86400,
-    providerSpecificData: {},
-  }),
+  mapTokens: (tokens) => {
+    const userInfo = extractUserInfo(tokens.access_token);
+    return {
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      expiresIn: tokens.expires_in || 86400,
+      email: userInfo.email || undefined,
+      displayName: userInfo.displayName || undefined,
+      providerSpecificData: {},
+    };
+  },
 };
 
 export default codebuddyIntl;

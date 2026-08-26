@@ -43,38 +43,53 @@ export default {
       url: "https://www.codebuddy.ai/v2/billing/meter/get-user-resource",
     },
   },
-  // Same model lineup exposed by the CN gateway — intl backend is the same catalog.
   models: [
+    // GLM 5.3 Series
     { id: "glm-5.3(high)", name: "GLM-5.3 (High Reasoning)" },
     { id: "glm-5.3(xhigh)", name: "GLM-5.3 (XHigh Reasoning)" },
     { id: "glm-5.3(max)", name: "GLM-5.3 (Max Reasoning)" },
     { id: "glm-5.3", name: "GLM-5.3" },
-    { id: "glm-5.2(high)", name: "GLM-5.2 (High Reasoning)" },
-    { id: "glm-5.2(xhigh)", name: "GLM-5.2 (XHigh Reasoning)" },
-    { id: "glm-5.2", name: "GLM-5.2" },
-    { id: "glm-5.1", name: "GLM-5.1" },
-    { id: "glm-5.0", name: "GLM-5.0" },
-    { id: "glm-5.0-turbo", name: "GLM-5.0-Turbo" },
-    { id: "glm-5v-turbo", name: "GLM-5v-Turbo" },
+
+    // Kimi K3 Series
     { id: "kimi-k3(high)", name: "Kimi-K3 (High Reasoning)" },
     { id: "kimi-k3(xhigh)", name: "Kimi-K3 (XHigh Reasoning)" },
     { id: "kimi-k3(max)", name: "Kimi-K3 (Max Reasoning)" },
     { id: "kimi-k3", name: "Kimi-K3" },
     { id: "kimi-k2.6", name: "Kimi-K2.6" },
     { id: "kimi-k2.5", name: "Kimi-K2.5" },
+
+    // Anthropic Claude Series
+    { id: "claude-opus-5(high)", name: "Claude Opus 5 (High Reasoning)" },
+    { id: "claude-opus-5(xhigh)", name: "Claude Opus 5 (XHigh Reasoning)" },
+    { id: "claude-opus-5(max)", name: "Claude Opus 5 (Max Reasoning)" },
     { id: "claude-opus-5", name: "Claude Opus 5" },
     { id: "claude-opus-4.6", name: "Claude Opus 4.6" },
+    { id: "claude-sonnet-4.6(max)", name: "Claude Sonnet 4.6 (Max Reasoning)" },
     { id: "claude-sonnet-4.6", name: "Claude Sonnet 4.6" },
+
+    // OpenAI GPT-5.6 Series
     { id: "gpt-5.6-luna", name: "GPT-5.6 Luna" },
     { id: "gpt-5.6-sol", name: "GPT-5.6 Sol" },
+    { id: "gpt-5.6-terra(high)", name: "GPT-5.6 Terra (High Reasoning)" },
+    { id: "gpt-5.6-terra(xhigh)", name: "GPT-5.6 Terra (XHigh Reasoning)" },
+    { id: "gpt-5.6-terra(max)", name: "GPT-5.6 Terra (Max Reasoning)" },
     { id: "gpt-5.6-terra", name: "GPT-5.6 Terra" },
+    { id: "gpt-5.5(high)", name: "GPT-5.5 (High Reasoning)" },
+    { id: "gpt-5.5", name: "GPT-5.5" },
+
+    // MiniMax Series
     { id: "minimax-m3(high)", name: "MiniMax-M3 (High Reasoning)" },
+    { id: "minimax-m3(xhigh)", name: "MiniMax-M3 (XHigh Reasoning)" },
     { id: "minimax-m3(max)", name: "MiniMax-M3 (Max Reasoning)" },
     { id: "minimax-m3", name: "MiniMax-M3" },
-    { id: "hy3-preview", name: "Hy3 Preview" },
+
+    // DeepSeek Series
     { id: "deepseek-v4-pro", name: "DeepSeek-V4-Pro" },
     { id: "deepseek-v4-flash", name: "DeepSeek-V4-Flash" },
     { id: "deepseek-v3-2-volc", name: "DeepSeek-V3.2" },
+
+    // Vision
+    { id: "glm-5v-turbo", name: "GLM-5v-Turbo" },
   ],
   oauth: {
     baseUrl: "https://www.codebuddy.ai",

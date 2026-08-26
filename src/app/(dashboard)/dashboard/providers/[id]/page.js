@@ -1742,7 +1742,7 @@ export default function ProviderDetailPage() {
             <h2 className="text-lg font-semibold">
               {"Available Models"}
             </h2>
-            {providerId !== "freebuff" && providerThinkingLevels && (
+            {providerId !== "freebuff" && providerId !== "codebuddy-intl" && providerId !== "codebuddy-cn" && providerThinkingLevels && (
               <select
                 value={thinkingMode}
                 onChange={(e) => handleThinkingModeChange(e.target.value)}
