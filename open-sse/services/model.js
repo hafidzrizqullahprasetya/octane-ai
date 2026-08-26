@@ -47,8 +47,8 @@ export function parseModel(modelStr) {
       return { provider: "opencode", model, isAlias: false, providerAlias: "oc" };
     }
 
-    // Route glm- and minimax- models under ot/ to codebuddy-intl
-    if ((providerOrAlias === "ot" || providerOrAlias === "freebuff" || providerOrAlias === "octane" || providerOrAlias === "octaneai") && (model.startsWith("glm-") || model.startsWith("minimax-"))) {
+    // Route glm-, minimax-, and kimi- models under ot/ to codebuddy-intl (Gacor full flagship route)
+    if ((providerOrAlias === "ot" || providerOrAlias === "freebuff" || providerOrAlias === "octane" || providerOrAlias === "octaneai") && (model.startsWith("glm-") || model.startsWith("minimax-") || model.startsWith("kimi-"))) {
       return { provider: "codebuddy-intl", model, isAlias: false, providerAlias: "cbai" };
     }
 
