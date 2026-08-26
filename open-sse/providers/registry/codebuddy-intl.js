@@ -45,6 +45,8 @@ export default {
   },
   // Same model lineup exposed by the CN gateway — intl backend is the same catalog.
   models: [
+    { id: "glm-5.2(high)", name: "GLM-5.2 (High Reasoning)" },
+    { id: "glm-5.2(xhigh)", name: "GLM-5.2 (XHigh Reasoning)" },
     { id: "glm-5.2", name: "GLM-5.2" },
     { id: "glm-5.1", name: "GLM-5.1" },
     { id: "glm-5.0", name: "GLM-5.0" },

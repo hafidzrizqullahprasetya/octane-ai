@@ -95,6 +95,11 @@ export default {
     { id: "muse-spark-1.2(high)", name: "Muse Spark 1.2 (High)", upstreamModelId: "meta/muse-spark-1.2" },
     { id: "muse-spark-1.2(xhigh)", name: "Muse Spark 1.2 (XHigh)", upstreamModelId: "meta/muse-spark-1.2" },
     { id: "muse-spark-1.2", name: "Muse Spark 1.2 (Default)", upstreamModelId: "meta/muse-spark-1.2" },
+
+    // 🤖 GLM-5.2 (CodeBuddy Route)
+    { id: "glm-5.2(high)", name: "GLM-5.2 (High)", upstreamModelId: "glm-5.2" },
+    { id: "glm-5.2(xhigh)", name: "GLM-5.2 (XHigh)", upstreamModelId: "glm-5.2" },
+    { id: "glm-5.2", name: "GLM-5.2 (Default)", upstreamModelId: "glm-5.2" },
   ],
   // Login-flow host — the CLI in freebuff mode logs in via freebuff.com, and
   // the server builds loginUrl from the host it was called on, so the link the
