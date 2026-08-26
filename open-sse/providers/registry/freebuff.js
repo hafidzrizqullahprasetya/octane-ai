@@ -96,7 +96,10 @@ export default {
     { id: "muse-spark-1.2(xhigh)", name: "Muse Spark 1.2 (XHigh)", upstreamModelId: "meta/muse-spark-1.2" },
     { id: "muse-spark-1.2", name: "Muse Spark 1.2 (Default)", upstreamModelId: "meta/muse-spark-1.2" },
 
-    // 🤖 GLM-5.2 (CodeBuddy Route)
+    // 🤖 GLM-5.3 & GLM-5.2 (CodeBuddy Route)
+    { id: "glm-5.3(high)", name: "GLM-5.3 (High)", upstreamModelId: "glm-5.3" },
+    { id: "glm-5.3(xhigh)", name: "GLM-5.3 (XHigh)", upstreamModelId: "glm-5.3" },
+    { id: "glm-5.3", name: "GLM-5.3 (Default)", upstreamModelId: "glm-5.3" },
     { id: "glm-5.2(high)", name: "GLM-5.2 (High)", upstreamModelId: "glm-5.2" },
     { id: "glm-5.2(xhigh)", name: "GLM-5.2 (XHigh)", upstreamModelId: "glm-5.2" },
     { id: "glm-5.2", name: "GLM-5.2 (Default)", upstreamModelId: "glm-5.2" },
