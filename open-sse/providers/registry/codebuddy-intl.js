@@ -68,7 +68,13 @@ export default {
     { id: "claude-sonnet-4.6", name: "Claude Sonnet 4.6" },
 
     // OpenAI GPT-5.6 Series
+    { id: "gpt-5.6-luna(high)", name: "GPT-5.6 Luna (High Reasoning)" },
+    { id: "gpt-5.6-luna(xhigh)", name: "GPT-5.6 Luna (XHigh Reasoning)" },
+    { id: "gpt-5.6-luna(max)", name: "GPT-5.6 Luna (Max Reasoning)" },
     { id: "gpt-5.6-luna", name: "GPT-5.6 Luna" },
+    { id: "gpt-5.6-sol(high)", name: "GPT-5.6 Sol (High Reasoning)" },
+    { id: "gpt-5.6-sol(xhigh)", name: "GPT-5.6 Sol (XHigh Reasoning)" },
+    { id: "gpt-5.6-sol(max)", name: "GPT-5.6 Sol (Max Reasoning)" },
     { id: "gpt-5.6-sol", name: "GPT-5.6 Sol" },
     { id: "gpt-5.6-terra(high)", name: "GPT-5.6 Terra (High Reasoning)" },
     { id: "gpt-5.6-terra(xhigh)", name: "GPT-5.6 Terra (XHigh Reasoning)" },
