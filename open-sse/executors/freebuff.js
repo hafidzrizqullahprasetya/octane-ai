@@ -321,12 +321,15 @@ async function requestSession(token, model, proxyOptions, hasRetriedUnlock = fal
     err.status = 401;
     throw err;
   }
+
+  const isModelLocked = response.status === 409 || data?.status === "model_locked" || data?.status === "session_model_mismatch" || data?.error === "model_locked";
+  if (isModelLocked && !hasRetriedUnlock) {
+    // Actively end the stale session bound to the previous model and claim fresh
+    await endSession(token, proxyOptions);
+    return requestSession(token, model, proxyOptions, true);
+  }
+
   if (!response.ok) {
-    if (response.status === 409 && (data?.status === "model_locked" || data?.status === "session_model_mismatch" || data?.error === "model_locked") && !hasRetriedUnlock) {
-      // Actively end the stale session bound to the previous model and claim fresh
-      await endSession(token, proxyOptions);
-      return requestSession(token, model, proxyOptions, true);
-    }
     const err = new Error(`Freebuff session request failed: ${response.status} ${JSON.stringify(data).slice(0, 200)}`);
     err.status = response.status;
     throw err;
