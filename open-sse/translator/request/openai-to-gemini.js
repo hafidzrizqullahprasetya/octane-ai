@@ -39,8 +39,18 @@ function normalizeGeminiContents(contents) {
   for (const c of contents || []) {
     if (!c?.role || !Array.isArray(c.parts) || c.parts.length === 0) continue;
     const last = out.at(-1);
-    if (last?.role === c.role) last.parts.push(...c.parts);
-    else out.push({ ...c, parts: [...c.parts] });
+    if (last?.role === c.role) {
+      const lastHasFn = last.parts.some(p => p.functionResponse);
+      const curHasMedia = c.parts.some(p => p.inlineData || p.fileData);
+      if (lastHasFn && curHasMedia) {
+        out.push({ role: GEMINI_ROLE.MODEL, parts: [{ text: "File loaded into visual context." }] });
+        out.push({ ...c, parts: [...c.parts] });
+      } else {
+        last.parts.push(...c.parts);
+      }
+    } else {
+      out.push({ ...c, parts: [...c.parts] });
+    }
   }
   return out;
 }
@@ -87,7 +97,7 @@ function openaiToGeminiBase(model, body, stream, signature = DEFAULT_THINKING_AG
   if (body.messages && Array.isArray(body.messages)) {
     for (const msg of body.messages) {
       if (msg.role === ROLE.TOOL && msg.tool_call_id) {
-        toolResponses[msg.tool_call_id] = msg.content;
+        toolResponses[msg.tool_call_id] = msg;
       }
     }
   }
@@ -158,7 +168,8 @@ function openaiToGeminiBase(model, body, stream, signature = DEFAULT_THINKING_AG
           if (hasActualResponses) {
             const toolParts = [];
             for (const fid of toolCallIds) {
-              if (!toolResponses[fid]) continue;
+              const toolMsg = toolResponses[fid];
+              if (!toolMsg) continue;
 
               let name = tcID2Name[fid];
               if (!name) {
@@ -170,10 +181,10 @@ function openaiToGeminiBase(model, body, stream, signature = DEFAULT_THINKING_AG
                 }
               }
 
-              let resp = toolResponses[fid];
-              let parsedResp = tryParseJSON(resp);
+              const rawContent = typeof toolMsg === "object" && toolMsg.content !== undefined ? toolMsg.content : toolMsg;
+              let parsedResp = typeof rawContent === "string" ? tryParseJSON(rawContent) : rawContent;
               if (parsedResp === null) {
-                parsedResp = { result: resp };
+                parsedResp = { result: rawContent };
               } else if (typeof parsedResp !== "object") {
                 parsedResp = { result: parsedResp };
               }
@@ -185,6 +196,24 @@ function openaiToGeminiBase(model, body, stream, signature = DEFAULT_THINKING_AG
                   response: { result: parsedResp }
                 }
               });
+
+              // Support image attachments returned by client tools (e.g. OpenCode read tool)
+              const attachments = toolMsg.experimental_attachments || toolMsg.attachments;
+              if (Array.isArray(attachments)) {
+                for (const att of attachments) {
+                  if (att && typeof att.url === "string" && att.url.startsWith("data:image/")) {
+                    const match = att.url.match(/^data:([^;,]+);base64,(.+)$/);
+                    if (match) {
+                      toolParts.push({
+                        inlineData: {
+                          mimeType: match[1],
+                          data: match[2]
+                        }
+                      });
+                    }
+                  }
+                }
+              }
             }
             if (toolParts.length > 0) {
               result.contents.push({ role: GEMINI_ROLE.USER, parts: toolParts });

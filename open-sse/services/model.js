@@ -41,6 +41,17 @@ export function parseModel(modelStr) {
     const firstSlash = modelStr.indexOf("/");
     const providerOrAlias = modelStr.slice(0, firstSlash);
     const model = modelStr.slice(firstSlash + 1);
+
+    // Route muse-spark under ot/ to opencode
+    if ((providerOrAlias === "ot" || providerOrAlias === "freebuff" || providerOrAlias === "octane" || providerOrAlias === "octaneai") && model.startsWith("muse-spark")) {
+      return { provider: "opencode", model, isAlias: false, providerAlias: "oc" };
+    }
+
+    // Route glm- and minimax- models under ot/ to codebuddy-intl
+    if ((providerOrAlias === "ot" || providerOrAlias === "freebuff" || providerOrAlias === "octane" || providerOrAlias === "octaneai") && (model.startsWith("glm-") || model.startsWith("minimax-"))) {
+      return { provider: "codebuddy-intl", model, isAlias: false, providerAlias: "cbai" };
+    }
+
     const provider = resolveProviderAlias(providerOrAlias);
     return { provider, model, isAlias: false, providerAlias: providerOrAlias };
   }

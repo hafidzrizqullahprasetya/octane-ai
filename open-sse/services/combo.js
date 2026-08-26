@@ -87,17 +87,24 @@ export function reorderByCapabilities(models, required) {
  */
 const comboRotationState = new Map();
 
-// Trailing run of items after the last assistant/model turn = the current user
-// turn. It may span several messages (e.g. text + image split across blocks),
-// so we return all of them. History media (older turns) must not pin the combo
-// to a vision model — those get stripped + placeholdered downstream instead.
+// Trailing run of items for the current active turn. If the conversation ends
+// with tool results or assistant tool calls, we look back to include the initiating
+// user prompt so capabilities (like vision) remain active throughout the tool loop.
 function trailingUserItems(arr) {
   if (!Array.isArray(arr) || arr.length === 0) return [];
   const isAssistant = (r) => r === "assistant" || r === "model";
+  const isTool = (r) => r === "tool" || r === "function";
+
   let i = arr.length - 1;
-  while (i >= 0 && !isAssistant(arr[i]?.role)) i--;
-  return arr.slice(i + 1);
+  // If trailing items are tool turns or assistant tool calls, step back to the user message
+  while (i >= 0 && (isTool(arr[i]?.role) || isAssistant(arr[i]?.role))) {
+    i--;
+  }
+  return arr.slice(Math.max(0, i));
 }
+
+// Image file reference pattern (e.g. placeholder.png, @images/photo.jpg, File foo.webp)
+const IMAGE_REF_RE = /(?:^|[\s"'`@\[\(<])([^\s"'`\(\)\[\]<>]+\.(?:png|jpe?g|webp|gif|bmp|svg))(?:[\s"'`\]\)>]|$)/i;
 
 // Detect which capabilities a request needs. Modalities (vision/pdf) are scanned
 // only on the current user turn; "search" is request-wide (lives in tools).
@@ -120,6 +127,7 @@ export function detectRequiredCapabilities(body) {
     if (t === "image_url" || t === "image" || t === "input_image") required.add("vision");
     if (t === "input_audio" || t === "audio_url" || t === "audio") required.add("audioInput");
     if (t === "input_video" || t === "video_url" || t === "video") required.add("videoInput");
+    if (typeof b.text === "string" && IMAGE_REF_RE.test(b.text)) required.add("vision");
     if (t === "file" || t === "document" || t === "input_file") {
       // Infer modality from embedded mime when available; fall back to pdf for generic files.
       let fmime = null;
@@ -164,21 +172,25 @@ export function detectRequiredCapabilities(body) {
     // Scan array content blocks
     scanContent(m.content);
 
-    // Scan string content for embedded data URIs
+    // Scan string content for embedded data URIs or image file references
     if (typeof m.content === "string") {
       if (m.content.includes("data:image/")) required.add("vision");
+      else if (IMAGE_REF_RE.test(m.content)) required.add("vision");
       else if (m.content.includes("data:audio/")) required.add("audioInput");
       else if (m.content.includes("data:application/pdf")) required.add("pdf");
     }
   };
 
-  // Modalities: current user turn only (trailing user run across each known shape).
-  for (const m of trailingUserItems(body.messages)) scanMessage(m);              // openai / claude / hermes / ollama
-  for (const it of trailingUserItems(body.input)) scanContent(it.content);       // responses
-  const contents = body.contents || body.request?.contents;                      // gemini / antigravity
-  for (const c of trailingUserItems(contents)) scanContent(c.parts);
-
-  // search: temporarily disabled in auto-switch (feature not wired yet).
+  // Modalities: scan recent conversation items (last 10 messages) so that tool
+  // interactions, multi-step agent reasoning, and follow-up questions remain pinned
+  // to the capable model (e.g. vision).
+  const msgs = Array.isArray(body.messages) ? body.messages.slice(-10) : [];
+  for (const m of msgs) scanMessage(m);
+  const inputs = Array.isArray(body.input) ? body.input.slice(-10) : [];
+  for (const it of inputs) scanContent(it.content);
+  const contents = body.contents || body.request?.contents;
+  const contentList = Array.isArray(contents) ? contents.slice(-10) : [];
+  for (const c of contentList) scanContent(c.parts);
 
   return required;
 }

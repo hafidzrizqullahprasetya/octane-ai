@@ -154,6 +154,7 @@ export function resolveTransport(provider, sourceFormat) {
 
 // Check if last message is from user
 export function isLastMessageFromUser(body) {
+  if (!body) return true;
   const messages = body.messages || body.contents;
   if (!messages?.length) return true;
   const lastMsg = messages[messages.length - 1];

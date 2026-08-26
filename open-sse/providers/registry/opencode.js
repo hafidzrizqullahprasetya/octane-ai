@@ -22,8 +22,6 @@ export default {
   models: [
     { id: "x-preview-f-free", name: "Ox Alpha Free (Unlimited)" },
     { id: "ox-alpha-free", name: "Ox Alpha Free (Unlimited)" },
-    { id: "muse-spark-1.2-contributor-free", name: "Muse Spark 1.2 (Free)" },
-    { id: "muse-spark-1.2", name: "Muse Spark 1.2 (Free)" },
     { id: "mimo-v2.5-free", name: "MiMo V2.5 Free" },
     { id: "nemotron-3.5-lightning-free", name: "Nemotron 3.5 Lightning Free" },
     { id: "nemotron-3-ultra-free", name: "Nemotron 3 Ultra Free" },

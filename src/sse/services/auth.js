@@ -8,16 +8,45 @@ import * as log from "../utils/logger.js";
 // Mutex to prevent race conditions during account selection
 let selectionMutex = Promise.resolve();
 
+function stripThinkingSuffix(name) {
+  if (!name) return "";
+  return String(name).replace(/\s*\((xhigh|max|high|medium|low|minimal|budget)\)$/i, "").trim();
+}
+
+function normalizeModelForFilter(name) {
+  if (!name) return null;
+  const stripped = stripThinkingSuffix(name);
+  if (stripped === "ox/ox-alpha" || stripped === "stealth/ox-alpha" || stripped === "ox-alpha") {
+    return "ox/ox-alpha";
+  }
+  if (stripped === "gpt-5.6-luna" || stripped === "openai/gpt-5.6-luna") {
+    return "openai/gpt-5.6-luna";
+  }
+  if (stripped === "kimi-k3" || stripped === "kimi-k3-eco" || stripped === "crof/kimi-k3" || stripped === "crof/kimi-k3-eco") {
+    return "crof/kimi-k3-eco";
+  }
+  if (stripped === "deepseek-v4-flash" || stripped === "deepseek/deepseek-v4-flash") {
+    return "deepseek/deepseek-v4-flash";
+  }
+  if (stripped === "muse-spark-1.2" || stripped === "meta/muse-spark-1.2" || stripped === "meta/muse-spark-1.2-contributor") {
+    return "meta/muse-spark-1.2";
+  }
+  return stripped;
+}
+
 export function filterConnectionsForModel(providerId, connections, model, settings = {}) {
   const override = (settings.providerStrategies || {})[providerId] || {};
   if (override.strictModelAssignment !== true || !model) {
     return connections;
   }
-  return connections.filter((connection) => {
-    const assignedModel = connection.providerSpecificData?.assignedModel
+  const cleanModel = normalizeModelForFilter(model);
+  const matched = connections.filter((connection) => {
+    const rawAssigned = connection.providerSpecificData?.assignedModel
       || (providerId === "freebuff" ? connection.providerSpecificData?.freebuffModel : null);
-    return assignedModel === model;
+    const assignedModel = normalizeModelForFilter(rawAssigned);
+    return assignedModel === cleanModel;
   });
+  return matched.length > 0 ? matched : connections;
 }
 
 const GITHUB_MONTHLY_USAGE_LIMIT = "you've reached your additional usage limit for your plan";

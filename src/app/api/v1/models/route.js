@@ -5,7 +5,7 @@ import {
   isAnthropicCompatibleProvider,
   isOpenAICompatibleProvider,
 } from "@/shared/constants/providers";
-import { getProviderConnections, getCombos, getCustomModels, getModelAliases } from "@/lib/localDb";
+import { getProviderConnections, getCombos, getCustomModels, getModelAliases, getSettings } from "@/lib/localDb";
 import { getDisabledModels } from "@/lib/disabledModelsDb";
 import { resolveKiroModels } from "open-sse/services/kiroModels.js";
 import { resolveKimchiModels } from "open-sse/services/kimchiModels.js";
@@ -283,6 +283,14 @@ export async function buildModelsList(kindFilter, options = {}) {
   }
   const isDisabled = (alias, modelId) => Array.isArray(disabledByAlias[alias]) && disabledByAlias[alias].includes(modelId);
 
+  let settings = {};
+  try {
+    settings = await getSettings();
+  } catch (e) {
+    // ignore
+  }
+  const visionAdapterEnabled = Boolean(settings?.capacityAdapter?.vision?.enabled);
+
   const activeConnectionByProvider = new Map();
   for (const conn of connections) {
     if (!activeConnectionByProvider.has(conn.provider)) {
@@ -484,7 +492,24 @@ export async function buildModelsList(kindFilter, options = {}) {
         const caps = liveCapabilitiesById.get(modelId)
           || capabilitiesFromServiceKind(customKind || liveKind)
           || (kind === LLM_KIND ? getCapabilitiesForModel(providerId, modelId) : null);
-        if (caps) model.capabilities = caps;
+        if (caps) {
+          const visionSupported = Boolean(caps.vision || ((kind === LLM_KIND || allowAsLlm) && visionAdapterEnabled));
+          model.capabilities = {
+            ...caps,
+            vision: visionSupported,
+            input: {
+              text: true,
+              image: visionSupported,
+              pdf: Boolean(caps.pdf)
+            },
+            attachment: true
+          };
+          model.modalities = {
+            input: ["text", ...(visionSupported ? ["image"] : []), ...(caps.pdf ? ["pdf"] : [])],
+            output: ["text"]
+          };
+          model.attachment = true;
+        }
         // Token limits under the snake_case names the OpenAI/OpenRouter
         // convention uses. `capabilities.contextWindow` is camelCase and nested,
         // so clients matching context_length find nothing, fall back to guessing

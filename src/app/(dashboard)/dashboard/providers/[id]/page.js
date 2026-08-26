@@ -174,7 +174,12 @@ export default function ProviderDetailPage() {
   const assignmentModels = (() => {
     const byId = new Map();
     const add = (model) => {
-      if (model?.id && !byId.has(model.id)) byId.set(model.id, model);
+      if (!model?.id) return;
+      const baseId = model.id.replace(/\s*\([^()]+\)$/, "");
+      if (!byId.has(baseId)) {
+        const cleanName = model.name ? model.name.replace(/\s*\([^()]+\)$/, "").trim() : baseId;
+        byId.set(baseId, { ...model, id: baseId, name: cleanName });
+      }
     };
     models.forEach(add);
     kiloFreeModels.forEach(add);
@@ -1737,7 +1742,7 @@ export default function ProviderDetailPage() {
             <h2 className="text-lg font-semibold">
               {"Available Models"}
             </h2>
-            {providerThinkingLevels && (
+            {providerId !== "freebuff" && providerThinkingLevels && (
               <select
                 value={thinkingMode}
                 onChange={(e) => handleThinkingModeChange(e.target.value)}

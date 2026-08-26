@@ -250,6 +250,7 @@ export async function getAllAccessTokens(userInfo, log) {
 }
 
 export async function refreshWithRetry(refreshFn, maxRetries = 3, log = null) {
+  if (typeof refreshFn !== "function") return null;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     if (attempt > 0) {
       const delay = attempt * 1000;
@@ -260,6 +261,8 @@ export async function refreshWithRetry(refreshFn, maxRetries = 3, log = null) {
     try {
       const result = await refreshFn();
       if (result) return result;
+      // If refresh returned null/undefined (no-op or unsupported), don't retry in a loop
+      return null;
     } catch (error) {
       log?.warn?.("TOKEN_REFRESH", `Attempt ${attempt + 1}/${maxRetries} failed: ${error.message}`);
     }

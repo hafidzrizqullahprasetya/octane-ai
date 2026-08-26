@@ -201,10 +201,10 @@ function normalizeProxyUrl(proxyUrl) {
 }
 
 function resolveConnectionProxyUrl(targetUrl, proxyOptions) {
-  const enabled = proxyOptions?.enabled === true || proxyOptions?.connectionProxyEnabled === true;
+  const enabled = proxyOptions?.enabled === true || proxyOptions?.connectionProxyEnabled === true || Boolean(proxyOptions?.proxyUrl || proxyOptions?.connectionProxyUrl || proxyOptions?.url);
   if (!enabled) return null;
 
-  const proxyUrlRaw = normalizeString(proxyOptions?.url ?? proxyOptions?.connectionProxyUrl);
+  const proxyUrlRaw = normalizeString(proxyOptions?.proxyUrl ?? proxyOptions?.url ?? proxyOptions?.connectionProxyUrl);
   if (!proxyUrlRaw) return null;
 
   const noProxy = normalizeString(proxyOptions?.noProxy ?? proxyOptions?.connectionNoProxy);
@@ -226,7 +226,13 @@ async function getDispatcher(proxyUrl) {
       proxyDispatchers.delete(proxyDispatchers.keys().next().value);
     }
     const { ProxyAgent } = await import("undici");
-    proxyDispatchers.set(normalized, new ProxyAgent({ uri: normalized }));
+    proxyDispatchers.set(normalized, new ProxyAgent({
+      uri: normalized,
+      keepAliveTimeout: 60_000,
+      keepAliveMaxTimeout: 300_000,
+      connections: 64,
+      pipelining: 1,
+    }));
   }
 
   return proxyDispatchers.get(normalized);
@@ -339,9 +345,8 @@ export async function proxyAwareFetch(url, options = {}, proxyOptions = null) {
       const dispatcher = await getDispatcher(proxyUrl);
       return await originalFetch(url, { ...options, dispatcher });
     } catch (proxyError) {
-      // If strictProxy is enabled, fail hard instead of falling back to direct
-      if (proxyOptions?.strictProxy === true) {
-        throw new Error(`[ProxyFetch] Proxy required but failed (strictProxy=true): ${proxyError.message}`);
+      if (options.signal?.aborted || proxyOptions?.strictProxy === true) {
+        throw proxyError;
       }
       console.warn(`[ProxyFetch] Proxy failed, falling back to direct: ${proxyError.message}`);
       return originalFetch(url, options);

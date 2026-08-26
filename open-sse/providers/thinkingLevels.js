@@ -38,6 +38,15 @@ const PATTERN_THINKING = [
   { provider: "codex", pattern: "*gpt-5.6-sol*", levels: [...CODEX_GPT_5_6_LEVELS, "ultra"] },
   { provider: "codex", pattern: "*gpt-5.6-terra*", levels: [...CODEX_GPT_5_6_LEVELS, "ultra"] },
   { provider: "codex", pattern: "*gpt-5.6-luna*", levels: CODEX_GPT_5_6_LEVELS },
+  { provider: "freebuff", pattern: "*gpt-5.6-luna*", levels: ["none", "low", "medium", "high", "xhigh", "max"] },
+  { provider: "freebuff", pattern: "*kimi*", levels: ["none", "low", "medium", "high", "xhigh", "max"] },
+  { provider: "freebuff", pattern: "*ox-alpha*", levels: ["none", "low", "high", "max"] },
+  { provider: "freebuff", pattern: "*deepseek*", levels: ["none", "low", "high", "max"] },
+  { provider: "freebuff", pattern: "*muse-spark*", levels: ["minimal", "low", "medium", "high", "xhigh"] },
+  { pattern: "*gpt-5.6-luna*", levels: ["none", "low", "medium", "high", "xhigh", "max"] },
+  { pattern: "*kimi*", levels: ["none", "low", "medium", "high", "xhigh", "max"] },
+  { pattern: "*ox-alpha*", levels: ["none", "low", "high", "max"] },
+  { pattern: "*muse-spark*", levels: ["minimal", "low", "medium", "high", "xhigh"] },
   { pattern: "*codex*", levels: ["low", "medium", "high", "xhigh"] }, // codex cannot disable thinking
 ];
 

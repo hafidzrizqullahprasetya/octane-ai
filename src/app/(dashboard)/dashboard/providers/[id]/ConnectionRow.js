@@ -284,20 +284,33 @@ export default function ConnectionRow({ connection, proxyPools, isOAuth, isFirst
               </Badge>
             )}
           </div>
-           {modelAssignmentOptions && onModelAssignmentChange && (
-             <select
-               value={connection.providerSpecificData?.assignedModel || connection.providerSpecificData?.freebuffModel || ""}
-              onChange={(e) => onModelAssignmentChange(e.target.value)}
-              disabled={!strictModelAssignment}
-               className="mt-2 max-w-full rounded-md border border-border bg-background px-2 py-1 text-[11px] text-text-main"
-               title="Model assignment"
-             >
-               <option value="">Unassigned</option>
-               {modelAssignmentOptions.map((model) => (
-                <option key={model.id} value={model.id}>{model.name || model.id}</option>
-              ))}
-            </select>
-          )}
+           {modelAssignmentOptions && onModelAssignmentChange && (() => {
+             const rawAssigned = connection.providerSpecificData?.assignedModel || connection.providerSpecificData?.freebuffModel || "";
+             const matchedOption = (modelAssignmentOptions || []).find(
+               (m) => m.id === rawAssigned ||
+                      m.upstreamModelId === rawAssigned ||
+                      (m.id.replace(/\s*\([^()]+\)$/, "") === rawAssigned.replace(/\s*\([^()]+\)$/, "")) ||
+                      (rawAssigned === "openai/gpt-5.6-luna" && (m.id === "gpt-5.6-luna" || m.id.startsWith("gpt-5.6-luna"))) ||
+                      (rawAssigned === "crof/kimi-k3-eco" && (m.id === "kimi-k3" || m.id.startsWith("kimi-k3"))) ||
+                      (rawAssigned === "ox/ox-alpha" && (m.id === "ox-alpha" || m.id.startsWith("ox-alpha"))) ||
+                      (rawAssigned === "deepseek/deepseek-v4-flash" && (m.id === "deepseek-v4-flash" || m.id.startsWith("deepseek-v4-flash")))
+             );
+             const currentSelectValue = matchedOption ? matchedOption.id : rawAssigned;
+             return (
+               <select
+                 value={currentSelectValue}
+                 onChange={(e) => onModelAssignmentChange(e.target.value)}
+                 disabled={!strictModelAssignment}
+                 className="mt-2 max-w-full rounded-md border border-border bg-background px-2 py-1 text-[11px] text-text-main"
+                 title="Model assignment"
+               >
+                 <option value="">Unassigned</option>
+                 {modelAssignmentOptions.map((model) => (
+                   <option key={model.id} value={model.id}>{model.name || model.id}</option>
+                 ))}
+               </select>
+             );
+           })()}
           {hasAnyProxy && (
             <div className="mt-1 flex items-center gap-2 flex-wrap">
               <span className="max-w-full truncate text-[11px] text-text-muted sm:max-w-[420px]" title={proxyDisplayText}>

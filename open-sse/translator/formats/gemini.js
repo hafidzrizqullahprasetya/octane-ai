@@ -50,48 +50,70 @@ export function convertOpenAIContentToParts(content) {
     parts.push({ text: content });
   } else if (Array.isArray(content)) {
     for (const item of content) {
-      if (item.type === OPENAI_BLOCK.TEXT) {
-        parts.push({ text: item.text });
-      } else if (item.type === OPENAI_BLOCK.IMAGE_URL && item.image_url?.url?.startsWith("data:")) {
-        const url = item.image_url.url;
-        const commaIndex = url.indexOf(",");
-        if (commaIndex !== -1) {
-          const mimePart = url.substring(5, commaIndex); // skip "data:"
-          const data = url.substring(commaIndex + 1);
-          const mimeType = mimePart.split(";")[0];
+      if (!item) continue;
 
-          parts.push({
-            inlineData: { mime_type: mimeType, data: data }
-          });
+      if (item.type === OPENAI_BLOCK.TEXT || item.type === "input_text") {
+        if (item.text) parts.push({ text: item.text });
+      } else if (
+        item.type === OPENAI_BLOCK.IMAGE_URL ||
+        item.type === "image" ||
+        item.type === "input_image"
+      ) {
+        const rawUrl =
+          typeof item.image_url === "string"
+            ? item.image_url
+            : item.image_url?.url || item.url || item.image || item.source?.data;
+        if (typeof rawUrl === "string") {
+          if (rawUrl.startsWith("data:")) {
+            const commaIndex = rawUrl.indexOf(",");
+            if (commaIndex !== -1) {
+              const mimeType = rawUrl.substring(5, commaIndex).split(";")[0] || "image/png";
+              const data = rawUrl.substring(commaIndex + 1);
+              parts.push({
+                inlineData: { mimeType, data }
+              });
+            }
+          } else if (rawUrl.startsWith("http://") || rawUrl.startsWith("https://")) {
+            parts.push({
+              fileData: { fileUri: rawUrl, mimeType: "image/*" }
+            });
+          }
         }
-      } else if (item.type === OPENAI_BLOCK.IMAGE_URL && item.image_url?.url && (item.image_url.url.startsWith("http://") || item.image_url.url.startsWith("https://"))) {
-        parts.push({
-          fileData: { fileUri: item.image_url.url, mimeType: "image/*" }
-        });
+      } else if (
+        item.type === OPENAI_BLOCK.FILE ||
+        item.type === "document" ||
+        item.type === "input_file"
+      ) {
+        const rawUrl = item.url || item.file?.file_data || item.source?.data;
+        if (typeof rawUrl === "string" && rawUrl.startsWith("data:")) {
+          const commaIndex = rawUrl.indexOf(",");
+          if (commaIndex !== -1) {
+            const mimeType =
+              item.mediaType ||
+              item.mimeType ||
+              rawUrl.substring(5, commaIndex).split(";")[0] ||
+              "image/png";
+            const data = rawUrl.substring(commaIndex + 1);
+            parts.push({
+              inlineData: { mimeType, data }
+            });
+          }
+        }
       } else if (item.type === OPENAI_BLOCK.INPUT_AUDIO && item.input_audio?.data) {
         const format = item.input_audio.format || "wav";
         const mimeType = format === "mp3" ? "audio/mpeg" : `audio/${format}`;
         parts.push({
-          inlineData: { mime_type: mimeType, data: item.input_audio.data }
+          inlineData: { mimeType, data: item.input_audio.data }
         });
       } else if (item.type === OPENAI_BLOCK.AUDIO_URL && item.audio_url?.url?.startsWith("data:")) {
         const url = item.audio_url.url;
         const commaIndex = url.indexOf(",");
         if (commaIndex !== -1) {
-          const mimePart = url.substring(5, commaIndex);
+          const mimeType = url.substring(5, commaIndex).split(";")[0] || "audio/wav";
           const data = url.substring(commaIndex + 1);
-          const mimeType = mimePart.split(";")[0];
           parts.push({
-            inlineData: { mime_type: mimeType, data: data }
+            inlineData: { mimeType, data }
           });
-        }
-      } else if (item.type === OPENAI_BLOCK.FILE && item.file?.file_data?.startsWith("data:")) {
-        const url = item.file.file_data;
-        const commaIndex = url.indexOf(",");
-        if (commaIndex !== -1) {
-          const mimeType = url.substring(5, commaIndex).split(";")[0];
-          const data = url.substring(commaIndex + 1);
-          parts.push({ inlineData: { mime_type: mimeType, data: data } });
         }
       }
     }
@@ -361,10 +383,10 @@ export function cleanJSONSchemaForAntigravity(schema) {
 
     // Empty schema {} (no type, no properties) after $ref removal — treat as object with placeholder
     if (Object.keys(obj).length === 0) {
-      obj.type = "object";
+      obj.type = "OBJECT";
       obj.properties = {
         reason: {
-          type: "string",
+          type: "STRING",
           description: "Brief explanation of why you are calling this tool"
         }
       };
@@ -372,11 +394,13 @@ export function cleanJSONSchemaForAntigravity(schema) {
       return;
     }
 
-    if (obj.type === "object") {
-      if (!obj.properties || Object.keys(obj.properties).length === 0) {
+    const t = typeof obj.type === "string" ? obj.type.toUpperCase() : null;
+    if (t === "OBJECT" || (!t && obj.properties)) {
+      obj.type = "OBJECT";
+      if (!obj.properties || typeof obj.properties !== "object" || Object.keys(obj.properties).length === 0) {
         obj.properties = {
           reason: {
-            type: "string",
+            type: "STRING",
             description: "Brief explanation of why you are calling this tool"
           }
         };
@@ -393,6 +417,64 @@ export function cleanJSONSchemaForAntigravity(schema) {
   }
 
   addPlaceholders(cleaned);
+
+  // Phase 6: Normalize and uppercase all schema types for Google Cloud AI Platform / Gemini
+  function normalizeTypesAndProperties(obj) {
+    if (!obj || typeof obj !== "object") return;
+
+    if (typeof obj.type === "string") {
+      const t = obj.type.toLowerCase();
+      if (t === "string") obj.type = "STRING";
+      else if (t === "integer") obj.type = "INTEGER";
+      else if (t === "number") obj.type = "NUMBER";
+      else if (t === "boolean") obj.type = "BOOLEAN";
+      else if (t === "array") {
+        obj.type = "ARRAY";
+        if (!obj.items || typeof obj.items !== "object") {
+          obj.items = { type: "STRING" };
+        }
+      } else if (t === "object") {
+        obj.type = "OBJECT";
+        if (!obj.properties || typeof obj.properties !== "object" || Object.keys(obj.properties).length === 0) {
+          obj.properties = {
+            reason: {
+              type: "STRING",
+              description: "Brief explanation of why you are calling this tool"
+            }
+          };
+          obj.required = ["reason"];
+        }
+      }
+    } else if (obj.properties && typeof obj.properties === "object") {
+      obj.type = "OBJECT";
+    }
+
+    if (obj.properties && typeof obj.properties === "object") {
+      for (const [k, v] of Object.entries(obj.properties)) {
+        if (typeof v === "string") {
+          const vt = v.toLowerCase();
+          if (vt === "object") {
+            obj.properties[k] = {
+              type: "OBJECT",
+              properties: { reason: { type: "STRING", description: "value" } }
+            };
+          } else {
+            obj.properties[k] = { type: vt.toUpperCase() };
+          }
+        } else if (v && typeof v === "object") {
+          normalizeTypesAndProperties(v);
+        }
+      }
+    }
+
+    for (const [k, v] of Object.entries(obj)) {
+      if (k !== "properties" && v && typeof v === "object") {
+        normalizeTypesAndProperties(v);
+      }
+    }
+  }
+
+  normalizeTypesAndProperties(cleaned);
 
   return cleaned;
 }

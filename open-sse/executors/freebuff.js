@@ -99,14 +99,49 @@ function injectEndTurnTool(body) {
   return { ...body, tools: [...tools, END_TURN_TOOL] };
 }
 
+function normalizeFreebuffModel(model) {
+  if (!model) return model;
+  const sufMatch = model.match(/\([^()]+\)\s*$/);
+  const suffix = sufMatch ? sufMatch[0] : "";
+  const base = suffix ? model.slice(0, sufMatch.index).trim() : model;
+
+  if (base === "muse-spark-1.2" || base === "meta/muse-spark-1.2" || base === "meta/muse-spark-1.2-contributor") return "muse-spark-1.2";
+  if (base === "ox/ox-alpha" || base === "ox-alpha" || base === "stealth/ox-alpha") return "stealth/ox-alpha";
+  if (base === "gpt-5.6-luna" || base === "openai/gpt-5.6-luna") return "openai/gpt-5.6-luna";
+  if (base === "kimi-k3" || base === "kimi-k3-eco" || base === "crof/kimi-k3" || base === "crof/kimi-k3-eco") return "crof/kimi-k3-eco";
+  if (base === "deepseek-v4-flash" || base === "deepseek/deepseek-v4-flash") return "deepseek/deepseek-v4-flash";
+  if (base === "deepseek-v4-pro" || base === "deepseek/deepseek-v4-pro") return "deepseek/deepseek-v4-pro";
+  return base;
+}
+
 // Freebuff root agent id per model (mirrors the CLI's
 // FREEBUFF_CLI_BASE3_AGENT_ID_BY_MODEL — the CLI harness moved from base2 to
 // base3, and the backend can return 404 "No endpoints found" for the old
 // base2 roots during the transition).
 const FREE_ROOT_AGENT_BY_MODEL = {
   "deepseek/deepseek-v4-flash": "base3-free-deepseek-flash",
+  "deepseek-v4-flash": "base3-free-deepseek-flash",
+  "deepseek/deepseek-v4-pro": "base3-free-deepseek",
+  "deepseek-v4-pro": "base3-free-deepseek",
   "mimo/mimo-v2.5": "base3-free-mimo",
+  "mimo-v2.5": "base3-free-mimo",
+  "minimax/minimax-m3": "base3-free-minimax-m3",
+  "minimax-m3": "base3-free-minimax-m3",
   "openai/gpt-5.6-luna": "base3-free-luna",
+  "gpt-5.6-luna": "base3-free-luna",
+  "openai/gpt-5.6-luna-es": "base3-free-luna-es",
+  "crof/kimi-k3-eco": "base3-free-kimi-k3-eco",
+  "kimi-k3-eco": "base3-free-kimi-k3-eco",
+  "crof/kimi-k3": "base3-free-kimi-k3-eco",
+  "kimi-k3": "base3-free-kimi-k3-eco",
+  "meta/muse-spark-1.2-contributor": "base3-free-muse-spark",
+  "meta/muse-spark-1.2": "base3-free-muse-spark",
+  "muse-spark-1.2": "base3-free-muse-spark",
+  "z-ai/glm-5.2": "base3-free-glm",
+  "anthropic/claude-fable-5": "base3-free-fable",
+  "ox/ox-alpha": "base3-free-ox-alpha",
+  "ox-alpha": "base3-free-ox-alpha",
+  "stealth/ox-alpha": "base3-free-ox-alpha",
 };
 
 // Per-token+model session cache (in-memory; keyed so multi-account setups
@@ -126,7 +161,7 @@ const inflight = fbState.inflight;
 const modelLockCooldowns = fbState.modelLockCooldowns;
 const poolLimitCooldowns = fbState.poolLimitCooldowns;
 
-const MODEL_LOCK_COOLDOWN_MS = 10 * 60 * 1000; // session bound to another model (~1h) — re-check every 10 min
+const MODEL_LOCK_COOLDOWN_MS = 30 * 1000; // session bound to another model — short retry window of 30s
 const POOL_LIMITED_COOLDOWN_MS = 5 * 60 * 1000; // IP tier refuses this model — try a different pool/relay
 
 // Cooldown maps need pruning: expired entries are cleared on write (sweep) and
@@ -151,13 +186,13 @@ function getCooldown(map, key) {
 }
 
 function proxyKeyOf(proxyOptions) {
-  return proxyOptions?.vercelRelayUrl || proxyOptions?.connectionProxyUrl || "direct";
+  return proxyOptions?.vercelRelayUrl || proxyOptions?.connectionProxyUrl || proxyOptions?.proxyUrl || proxyOptions?.url || "direct";
 }
 
 function sessionGateFromText(text) {
   let parsed = {};
   try { parsed = JSON.parse(String(text || "")); } catch { parsed = {}; }
-  return classifySessionGate(parsed.error || parsed.error_type || "", parsed.message || "", parsed.currentModel || null);
+  return classifySessionGate(parsed.error || parsed.error_type || parsed.status || "", parsed.message || "", parsed.currentModel || null);
 }
 
 // Parse a 409/428/410 body into { kind, currentModel }. `msg` may be a whole
@@ -168,7 +203,7 @@ function sessionGateFromError(error) {
   if (start < 0) return null;
   try {
     const parsed = JSON.parse(msg.slice(start));
-    return classifySessionGate(parsed.error || "", parsed.message || "", parsed.currentModel || null);
+    return classifySessionGate(parsed.error || parsed.error_type || parsed.status || "", parsed.message || "", parsed.currentModel || null);
   } catch {
     return null;
   }
@@ -259,7 +294,7 @@ async function endSession(token, proxyOptions) {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${token}`,
-        "User-Agent": "codebuff-cli/0.0.138",
+        "User-Agent": "codebuff-cli/1.0.0",
       },
     }, proxyOptions, 2);
   } catch {
@@ -273,7 +308,7 @@ async function requestSession(token, model, proxyOptions, hasRetriedUnlock = fal
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
-      "User-Agent": "codebuff-cli/0.0.138",
+      "User-Agent": "codebuff-cli/1.0.0",
       "x-freebuff-model": model,
     },
   }, proxyOptions);
@@ -287,7 +322,7 @@ async function requestSession(token, model, proxyOptions, hasRetriedUnlock = fal
     throw err;
   }
   if (!response.ok) {
-    if (response.status === 409 && data?.status === "model_locked" && !hasRetriedUnlock) {
+    if (response.status === 409 && (data?.status === "model_locked" || data?.status === "session_model_mismatch" || data?.error === "model_locked") && !hasRetriedUnlock) {
       // Actively end the stale session bound to the previous model and claim fresh
       await endSession(token, proxyOptions);
       return requestSession(token, model, proxyOptions, true);
@@ -360,7 +395,7 @@ async function startRun(token, model, proxyOptions) {
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
-      "User-Agent": "codebuff-cli/0.0.138",
+      "User-Agent": "codebuff-cli/1.0.0",
     },
     body: JSON.stringify({
       action: "START",
@@ -398,7 +433,7 @@ async function finishRun(token, runId, status, proxyOptions) {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
-        "User-Agent": "codebuff-cli/0.0.138",
+        "User-Agent": "codebuff-cli/1.0.0",
       },
       body: JSON.stringify({ action: "FINISH", runId, status }),
       signal: AbortSignal.timeout(10_000),
@@ -475,14 +510,27 @@ export class FreebuffExecutor extends BaseExecutor {
     return super.parseError(response, bodyText);
   }
 
+  buildHeaders(credentials, stream = true) {
+    const headers = super.buildHeaders(credentials, stream);
+    headers["User-Agent"] = "codebuff-cli/1.0.0";
+    headers["Accept"] = "application/json, text/event-stream";
+    return headers;
+  }
+
   transformRequest(model, body, stream, credentials) {
     // Top-level wire shape — see header comment. `run_id` and
     // `freebuff_instance_id` are attached by execute() (they need the async
     // run/session registration), so this only sets the static parts.
+    const normalizedModel = normalizeFreebuffModel(model);
+    body.model = normalizedModel;
+
+    const fingerprintId =
+      credentials?.providerSpecificData?.fingerprintId ||
+      credentials?.fingerprintId ||
+      crypto.randomUUID();
+
     body.codebuff_metadata = {
-      client_id:
-        credentials?.providerSpecificData?.fingerprintId ||
-        `9router-${crypto.randomUUID()}`,
+      client_id: fingerprintId,
       cost_mode: "free",
     };
     body.provider = { allow_fallbacks: false };
@@ -499,6 +547,7 @@ export class FreebuffExecutor extends BaseExecutor {
   }
 
   async execute({ model, body, stream, credentials, signal, log, proxyOptions = null }) {
+    model = normalizeFreebuffModel(model);
     const token = credentials?.accessToken;
     if (!token) {
       throw new Error("Freebuff requires a connected Freebuff login (no access token found)");
@@ -631,13 +680,16 @@ export class FreebuffExecutor extends BaseExecutor {
       if (SESSION_STALE_CODES.has(response.status)) {
         const text = await response.text().catch(() => "");
         const gate = sessionGateFromText(text);
-        if (gate.kind === "model_locked" || gate.kind === "limited_ip") {
+        if (gate.kind === "limited_ip") {
           markFinished("cancelled");
           throwSessionGateError(gate, { token, model, proxyKey, poolId, log });
         }
 
-        log?.debug?.("AUTH", `Freebuff ${response.status} session gate — re-claiming session`);
+        log?.debug?.("AUTH", `Freebuff ${response.status} session gate (${gate.kind || "stale"}) — re-claiming session for ${model}`);
         markFinished("cancelled");
+        if (gate.kind === "model_locked") {
+          await endSession(token, proxyOptions);
+        }
         try {
           session = await ensureSession(token, model, proxyOptions, true);
           runId = await startRun(token, model, proxyOptions);

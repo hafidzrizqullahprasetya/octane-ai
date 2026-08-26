@@ -24,17 +24,18 @@ export default {
   id: "freebuff",
   priority: 45,
   hasFree: true,
-  alias: "fb",
-  uiAlias: "fb",
+  alias: "ot",
+  aliases: ["fb", "octane", "octaneai"],
+  uiAlias: "ot",
   display: {
-    name: "Freebuff",
+    name: "OctaneAI",
     icon: "bolt",
     color: "#84CC16",
-    textIcon: "FB",
-    website: "https://freebuff.com",
+    textIcon: "OT",
+    website: "https://octaneai.com",
     notice: {
       signupUrl: "https://freebuff.com",
-      text: "Free ad-supported coding agent by Codebuff. Sign in with your Freebuff/Codebuff account via browser login. Free tier is ad-supported and limited in some regions (limited mode: 6 x 1-hour sessions/day); full mode runs in select countries. ⚠️ One account has ONE active session locked to ONE model — requesting a different model while a session is active returns 'model_locked' (409); use a separate account per model, or wait for the session to expire.",
+      text: "OctaneAI provider (powered by Freebuff multi-account pool). High-performance AI proxy with custom thinking levels.",
     },
   },
   category: "free",
@@ -62,13 +63,38 @@ export default {
   features: {
     usage: true,
   },
-  // Mirrors the CLI's free picker (FREEBUFF_ROOT_AGENT_ID_BY_MODEL).
-  // mimo/mimo-v2.5-pro is intentionally absent — it is not a free-tier model
-  // and would bill credits or be rejected under the base2-free agent.
+  // Active & verified OctaneAI / Freebuff models with all thinking endpoints
   models: [
-    { id: "deepseek/deepseek-v4-flash", name: "DeepSeek V4 Flash" },
-    { id: "mimo/mimo-v2.5", name: "MiMo 2.5" },
-    { id: "openai/gpt-5.6-luna", name: "GPT-5.6 Luna" },
+    // 🧠 GPT-5.6 Luna (Vision + Reasoning)
+    { id: "gpt-5.6-luna(high)", name: "GPT-5.6 Luna (High)", upstreamModelId: "openai/gpt-5.6-luna" },
+    { id: "gpt-5.6-luna(xhigh)", name: "GPT-5.6 Luna (XHigh)", upstreamModelId: "openai/gpt-5.6-luna" },
+    { id: "gpt-5.6-luna(max)", name: "GPT-5.6 Luna (Max)", upstreamModelId: "openai/gpt-5.6-luna" },
+    { id: "gpt-5.6-luna", name: "GPT-5.6 Luna (Default)", upstreamModelId: "openai/gpt-5.6-luna" },
+
+    // 🌌 Kimi K3 (1.05M Context Reasoning)
+    { id: "kimi-k3(high)", name: "Kimi K3 (High)", upstreamModelId: "crof/kimi-k3-eco" },
+    { id: "kimi-k3(xhigh)", name: "Kimi K3 (XHigh)", upstreamModelId: "crof/kimi-k3-eco" },
+    { id: "kimi-k3(max)", name: "Kimi K3 (Max)", upstreamModelId: "crof/kimi-k3-eco" },
+    { id: "kimi-k3", name: "Kimi K3 (Default)", upstreamModelId: "crof/kimi-k3-eco" },
+
+    // 🐂 Ox Alpha (1M Context Vision & Reasoning)
+    { id: "ox-alpha(low)", name: "Ox Alpha (Low)", upstreamModelId: "stealth/ox-alpha" },
+    { id: "ox-alpha(high)", name: "Ox Alpha (High)", upstreamModelId: "stealth/ox-alpha" },
+    { id: "ox-alpha(max)", name: "Ox Alpha (Max)", upstreamModelId: "stealth/ox-alpha" },
+    { id: "ox-alpha", name: "Ox Alpha (Default)", upstreamModelId: "stealth/ox-alpha" },
+
+    // ⚡ DeepSeek V4 Flash (High Speed / Night Route)
+    { id: "deepseek-v4-flash(high)", name: "DeepSeek V4 Flash (High)", upstreamModelId: "deepseek/deepseek-v4-flash" },
+    { id: "deepseek-v4-flash(max)", name: "DeepSeek V4 Flash (Max)", upstreamModelId: "deepseek/deepseek-v4-flash" },
+    { id: "deepseek-v4-flash", name: "DeepSeek V4 Flash (Default)", upstreamModelId: "deepseek/deepseek-v4-flash" },
+
+    // 🎨 Meta Muse Spark 1.2 (OpenCode Route)
+    { id: "muse-spark-1.2(minimal)", name: "Muse Spark 1.2 (Minimal)", upstreamModelId: "meta/muse-spark-1.2" },
+    { id: "muse-spark-1.2(low)", name: "Muse Spark 1.2 (Low)", upstreamModelId: "meta/muse-spark-1.2" },
+    { id: "muse-spark-1.2(medium)", name: "Muse Spark 1.2 (Medium)", upstreamModelId: "meta/muse-spark-1.2" },
+    { id: "muse-spark-1.2(high)", name: "Muse Spark 1.2 (High)", upstreamModelId: "meta/muse-spark-1.2" },
+    { id: "muse-spark-1.2(xhigh)", name: "Muse Spark 1.2 (XHigh)", upstreamModelId: "meta/muse-spark-1.2" },
+    { id: "muse-spark-1.2", name: "Muse Spark 1.2 (Default)", upstreamModelId: "meta/muse-spark-1.2" },
   ],
   // Login-flow host — the CLI in freebuff mode logs in via freebuff.com, and
   // the server builds loginUrl from the host it was called on, so the link the
