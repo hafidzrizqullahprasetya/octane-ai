@@ -99,7 +99,12 @@ export default {
     // 🤖 GLM-5.3 & GLM-5.2 (CodeBuddy Route)
     { id: "glm-5.3(high)", name: "GLM-5.3 (High)", upstreamModelId: "glm-5.3" },
     { id: "glm-5.3(xhigh)", name: "GLM-5.3 (XHigh)", upstreamModelId: "glm-5.3" },
+    { id: "glm-5.3(max)", name: "GLM-5.3 (Max)", upstreamModelId: "glm-5.3" },
     { id: "glm-5.3", name: "GLM-5.3 (Default)", upstreamModelId: "glm-5.3" },
+    { id: "kimi-k3(high)", name: "Kimi K3 (High)", upstreamModelId: "kimi-k3" },
+    { id: "kimi-k3(xhigh)", name: "Kimi K3 (XHigh)", upstreamModelId: "kimi-k3" },
+    { id: "kimi-k3(max)", name: "Kimi K3 (Max)", upstreamModelId: "kimi-k3" },
+    { id: "kimi-k3", name: "Kimi K3 (Default)", upstreamModelId: "kimi-k3" },
     { id: "glm-5.2(high)", name: "GLM-5.2 (High)", upstreamModelId: "glm-5.2" },
     { id: "glm-5.2(xhigh)", name: "GLM-5.2 (XHigh)", upstreamModelId: "glm-5.2" },
     { id: "glm-5.2", name: "GLM-5.2 (Default)", upstreamModelId: "glm-5.2" },

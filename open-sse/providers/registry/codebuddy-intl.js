@@ -47,6 +47,7 @@ export default {
   models: [
     { id: "glm-5.3(high)", name: "GLM-5.3 (High Reasoning)" },
     { id: "glm-5.3(xhigh)", name: "GLM-5.3 (XHigh Reasoning)" },
+    { id: "glm-5.3(max)", name: "GLM-5.3 (Max Reasoning)" },
     { id: "glm-5.3", name: "GLM-5.3" },
     { id: "glm-5.2(high)", name: "GLM-5.2 (High Reasoning)" },
     { id: "glm-5.2(xhigh)", name: "GLM-5.2 (XHigh Reasoning)" },
@@ -57,6 +58,7 @@ export default {
     { id: "glm-5v-turbo", name: "GLM-5v-Turbo" },
     { id: "kimi-k3(high)", name: "Kimi-K3 (High Reasoning)" },
     { id: "kimi-k3(xhigh)", name: "Kimi-K3 (XHigh Reasoning)" },
+    { id: "kimi-k3(max)", name: "Kimi-K3 (Max Reasoning)" },
     { id: "kimi-k3", name: "Kimi-K3" },
     { id: "kimi-k2.6", name: "Kimi-K2.6" },
     { id: "kimi-k2.5", name: "Kimi-K2.5" },
