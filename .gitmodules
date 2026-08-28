@@ -19,3 +19,6 @@
 [submodule "bercocok-tanam"]
 	path = bercocok-tanam
 	url = https://github.com/fzrilsh/bercocok-tanam.git
+[submodule "outlook-creator"]
+	path = outlook-creator
+	url = https://github.com/hafidzrizqullahprasetya/outlook-creator.git
