@@ -7,7 +7,7 @@ services:
     ports:
       - "20128:20128"
     volumes:
-      - octane-data:/app/data
+      - ./data:/app/data
     env_file:
       - .env
     environment:
@@ -38,7 +38,3 @@ services:
       - WATCHTOWER_CLEANUP=true
       - WATCHTOWER_POLL_INTERVAL=30
       - WATCHTOWER_INCLUDE_STOPPED=false
-
-volumes:
-  octane-data:
-    name: octane-data
