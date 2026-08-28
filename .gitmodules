@@ -13,3 +13,6 @@
 [submodule "github-regkit-private"]
 	path = github-regkit-private
 	url = https://github.com/hafidzrizqullahprasetya/github-regkit-private.git
+[submodule "github-farm"]
+	path = github-farm
+	url = https://github.com/hafidzrizqullahprasetya/github-farm.git
