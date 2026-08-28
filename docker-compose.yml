@@ -36,7 +36,7 @@ services:
     environment:
       - DOCKER_API_VERSION=1.44
       - WATCHTOWER_CLEANUP=true
-      - WATCHTOWER_POLL_INTERVAL=300
+      - WATCHTOWER_POLL_INTERVAL=30
       - WATCHTOWER_INCLUDE_STOPPED=false
 
 volumes:
