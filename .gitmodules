@@ -1,0 +1,9 @@
+[submodule "opencode"]
+	path = opencode
+	url = https://github.com/anomalyco/opencode.git
+[submodule "freebuff"]
+	path = freebuff
+	url = https://github.com/CodebuffAI/freebuff.git
+[submodule "codex"]
+	path = codex
+	url = https://github.com/openai/codex.git

@@ -86,9 +86,7 @@ graphify-out/*
 .codegraph/
 .PR/
 .next-analyze/*
-codex/
-freebuff/
-opencode/
+bitwarden/
 
 # Python cache & debug artifacts
 __pycache__/
