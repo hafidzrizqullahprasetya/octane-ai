@@ -7,3 +7,6 @@
 [submodule "codex"]
 	path = codex
 	url = https://github.com/openai/codex.git
+[submodule "claude-code"]
+	path = claude-code
+	url = https://github.com/anthropics/claude-code.git
