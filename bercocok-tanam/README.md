@@ -1,0 +1,630 @@
+# 🌱 bercocok-tanam
+
+[![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D16-brightgreen)](https://nodejs.org/)
+[![GitHub Stars](https://img.shields.io/github/stars/fzrilsh/bercocok-tanam?style=social)](https://github.com/fzrilsh/bercocok-tanam/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/fzrilsh/bercocok-tanam?style=social)](https://github.com/fzrilsh/bercocok-tanam/network/members)
+[![GitHub Issues](https://img.shields.io/github/issues/fzrilsh/bercocok-tanam)](https://github.com/fzrilsh/bercocok-tanam/issues)
+[![Last Commit](https://img.shields.io/github/last-commit/fzrilsh/bercocok-tanam)](https://github.com/fzrilsh/bercocok-tanam/commits/main)
+[![Code Style: ESLint](https://img.shields.io/badge/code_style-ESLint-5e5ce6.svg)](https://eslint.org/)
+[![Sponsor on Patreon](https://img.shields.io/badge/Patreon-Support%20Development-ff424d?logo=patreon&logoColor=white)](https://patreon.com/fazrilsh)
+
+Automated CLI tool for harvesting Kiro refresh tokens, Cloudflare Workers AI API tokens, Codebuddy AI OAuth tokens, TokenGo API keys, and creating Grok/x.ai and GitHub accounts using hybrid Puppeteer + HTTP automation. Features multi-worker parallel processing, intelligent proxy rotation, flexible temp email providers (Gmail, Mail.cx, ncaori, 1secemail), detailed per-account reporting, and comprehensive error tracking.
+
+![All-in-One Automation Screenshot](assets/screenshot.png)
+
+## ✨ Features
+
+- 🔑 **Kiro Automation** - Automated Kiro OAuth refresh token extraction
+- ☁️ **Cloudflare Automation** - Cloudflare Workers AI API token generation
+- 🤖 **Codebuddy Automation** - Codebuddy AI OAuth token extraction
+- 🎫 **TokenGo Automation** - TokenGo API key harvesting with intelligent proxy rotation
+  - Hybrid HTTP + Puppeteer approach (Google OAuth via Puppeteer, API calls via HTTP)
+  - Automatic proxy rotation on 429 rate limits (up to 5 proxies per account)
+  - Cookie persistence between phases to prevent state mismatch errors
+  - 30-90s cooldown with proxy rotation, 5-10min without proxy
+  - GitHub OAuth login mode support
+- 🤖 **Grok Automation** - Automated Grok/x.ai account creation with OTP verification
+  - Multi-provider temp email support (Gmail, Mail.cx, ncaori, 1secemail)
+  - Turnstile extension for Cloudflare challenge bypass
+  - Automatic 9Router account import
+- 🐙 **GitHub Automation** - Automated GitHub account signup
+  - Python/Playwright-based automation
+  - Multi-provider temp email with OTP verification
+  - Proxy pool support
+- 📧 **Flexible Temp Email Providers** - Multiple temp email options
+  - **Gmail**: Plus-addressing (user+suffix@gmail.com) with Gmail API OTP reading
+  - **Mail.cx**: API-based temp email with custom domains
+  - **ncaori**: Free temp email service
+  - **1secemail**: Free temp email service
+  - **Auto mode**: Randomly selects from available providers
+- 🚀 **All-in-One Mode** - Run multiple automations in parallel (Kiro, Cloudflare, Codebuddy, TokenGo, Grok, GitHub)
+- 🌐 **Proxy Pool System** - Shared proxy pool with automatic worker assignment and locking
+- 👷 **Multi-Worker Parallel Processing** - Configure multiple browser instances for faster processing
+- 📊 **Detailed Reporting** - Per-worker and per-account statistics with timing breakdown
+- 🎯 **Smart Account Queue Management** - Automatic account locking prevents duplicate processing
+- ❌ **Comprehensive Error Tracking** - All failed accounts logged with timestamps and automation type
+- 🔄 **Account Change Detection** - Confirmation prompt when account count changes before automation
+- 🔌 **Flexible Proxy Support** - Per-account proxies or shared proxy pool for all automations
+- ⚙️ **Interactive Settings** - Easy configuration management through CLI interface
+
+## 📋 Requirements
+
+- Node.js 16+ 
+- Google Chrome or Chromium browser
+- Valid Google accounts (email|password format)
+- **Python 3.8+** (required for GitHub automation only)
+  - Virtual environment automatically created at `venv/`
+  - Dependencies: playwright, requests
+- **9Router** - Backend service for token management
+  - This tool harvests tokens and imports them to 9Router
+  - Must be running and accessible at configured `ROUTER_URL`
+  - Default: `http://127.0.0.1:20128/`
+  - **Important**: Disable "Require Login" in 9Router settings (Settings → Security) for import API to work
+
+## 🚀 Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/fzrilsh/bercocok-tanam
+cd bercocok-tanam
+
+# Install dependencies
+npm install
+
+# (Optional) Setup Python environment for GitHub automation
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install playwright requests
+python -m playwright install chromium
+
+# Create accounts file (for token harvesting: Kiro, Cloudflare, Codebuddy, TokenGo)
+echo "email@example.com|password123" > accounts.txt
+
+# (Optional) Configure settings
+cp .env.example .env
+# Edit .env with your settings (temp email providers, passwords, etc.)
+```
+
+## ⚙️ Configuration
+
+Create a `.env` file in the project root:
+
+```env
+# 9Router configuration
+ROUTER_URL=http://your-router-url:20128/
+ROUTER_PASS=
+
+# Browser settings
+PW_HEADLESS=1
+BROWSER_COUNT=4
+BROWSER_SLOW_MO=2
+CHROME_EXECUTABLE_PATH=/path/to/chrome
+
+# File paths
+ACCOUNT_FILE=accounts.txt
+RESULT_FILE=output/keys/{provider}_keys.txt
+ERROR_ACCOUNT_FILE=output/errors/errorAccounts.txt
+PROXY_POOL_FILE=proxy_keys.txt
+
+# Timing & delays
+DELAY_BEFORE_NEXT_CLICK_MS=1000
+DELAY_BETWEEN_ACCOUNTS_MS=3000
+DELAY_BEFORE_BROWSER_CLOSE_MS=3000
+DELAY_BEFORE_READING_COOKIES_MS=5000
+
+# Timeouts
+TIMEOUT_NAVIGATION_MS=60000
+TIMEOUT_DEFAULT_MS=15000
+TIMEOUT_SHORT_MS=10000
+
+# Temp email provider configuration
+TEMP_EMAIL_PROVIDER=auto
+
+# Gmail provider (required if using "gmail" provider)
+GMAIL_CREDENTIALS_FILE=credentials.json
+GMAIL_BASE_ADDRESS=your-email@gmail.com
+
+# Mail.cx provider (required if using "mailcx" provider)
+MAIL_CX_API_TOKEN=
+MAIL_CX_DOMAINS=@yourdomain.com
+
+# Account password configuration
+PASSWORD=YourSecurePassword123!@#
+GROK_PASSWORD=
+
+# Turnstile extension configuration (required for Grok automation)
+SEAL_UNLOCK_URL=https://your-seal-service.com
+SEAL_TOKEN=your-token
+SEAL_KEY=
+TURNSTILE_EXT_PATH=
+```
+
+### Configuration Variables
+
+| Variable | Description | Default |
+|---|---|---|
+| **9Router Settings** | | |
+| `ROUTER_URL` | 9Router endpoint for token import | `http://127.0.0.1:20128/` |
+| `ROUTER_PASS` | Password for 9Router authentication (optional, required if 9Router has auth enabled) | Empty |
+| **Browser Settings** | | |
+| `PW_HEADLESS` | `1` = headless, `0` = visible browser | `1` |
+| `BROWSER_COUNT` | Number of parallel browser instances | `1` |
+| `BROWSER_SLOW_MO` | Delay between browser actions (ms) | `2` |
+| `CHROME_EXECUTABLE_PATH` | Path to Chrome/Chromium executable | Auto-detect |
+| **File Paths** | | |
+| `ACCOUNT_FILE` | Path to accounts file | `accounts.txt` |
+| `RESULT_FILE` | Output file template - `{provider}` is replaced with automation name | `output/keys/{provider}_keys.txt` |
+| `ERROR_ACCOUNT_FILE` | Log file for failed accounts | `output/errors/errorAccounts.txt` |
+| `PROXY_POOL_FILE` | Shared proxy pool file (optional) | `proxy_keys.txt` |
+| **Timing & Delays (milliseconds)** | | |
+| `DELAY_BEFORE_NEXT_CLICK_MS` | Delay before next click action | `1000` |
+| `DELAY_BETWEEN_ACCOUNTS_MS` | Delay between processing accounts | `3000` |
+| `DELAY_BEFORE_BROWSER_CLOSE_MS` | Delay before closing browser | `3000` |
+| `DELAY_BEFORE_READING_COOKIES_MS` | Delay before reading cookies | `5000` |
+| **Timeouts (milliseconds)** | | |
+| `TIMEOUT_NAVIGATION_MS` | Page navigation timeout | `60000` |
+| `TIMEOUT_DEFAULT_MS` | Default element wait timeout | `15000` |
+| `TIMEOUT_SHORT_MS` | Short element wait timeout | `10000` |
+| **Temp Email Configuration** | | |
+| `TEMP_EMAIL_PROVIDER` | Email provider: `"auto"`, `"gmail"`, `"mailcx"`, `"ncaori"`, `"1secemail"`, or array like `["ncaori","1secemail"]` | `auto` |
+| **Gmail Provider** (required if using `"gmail"`) | | |
+| `GMAIL_CREDENTIALS_FILE` | Path to Google OAuth credentials JSON from [console.cloud.google.com](https://console.cloud.google.com) | `credentials.json` |
+| `GMAIL_BASE_ADDRESS` | Base Gmail address (plus-addresses will be generated like `user+suffix@gmail.com`) | Required |
+| **Mail.cx Provider** (required if using `"mailcx"`) | | |
+| `MAIL_CX_API_TOKEN` | API token from [mail.cx dashboard](https://api.mail.cx) | Required |
+| `MAIL_CX_DOMAINS` | Comma-separated domains for address generation | `@yourdomain.com` |
+| **Password Configuration** | | |
+| `PASSWORD` | Default password for account creation (Grok, GitHub). Min 16 chars with letters+numbers for Grok | Required for Grok/GitHub |
+| `GROK_PASSWORD` | Grok-specific password (defaults to `PASSWORD` if not set) | Inherits `PASSWORD` |
+| **Turnstile Extension** (required for Grok automation) | | |
+| `SEAL_UNLOCK_URL` | Remote service URL for decrypting the encrypted turnstile extension | Required |
+| `SEAL_TOKEN` | Authentication token for the unlock service | Required |
+| `SEAL_KEY` | Optional: Local base64-encoded 32-byte AES-256-GCM key. If set, `SEAL_UNLOCK_URL` not needed | Optional |
+| `TURNSTILE_EXT_PATH` | Optional: Path to plain turnstile extension directory (bypasses encryption) | Optional |
+
+## 📝 Account File Format
+
+Create `accounts.txt` with one account per line:
+
+```
+user1@gmail.com|password123
+user2@gmail.com|password456
+user3@gmail.com|password789|http://proxy-server:8080
+user4@gmail.com|password321|http://user:pass@proxy:8080
+```
+
+**Format Rules:**
+- One account per line
+- Fields separated by `|` (pipe)
+- Lines starting with `#` are comments
+- Proxy is optional (supported by all automations)
+
+**Usage by Automation:**
+- **Token Harvesting** (Kiro, Cloudflare, Codebuddy, TokenGo): Uses existing Google accounts from `accounts.txt`
+- **Account Creation** (Grok, GitHub): Ignores `accounts.txt` and creates new accounts using temp email providers configured via `TEMP_EMAIL_PROVIDER`
+
+### Proxy Pool (Optional)
+
+Instead of specifying proxies per account, you can use a shared proxy pool. Create a proxy pool file (e.g., `proxy_keys.txt`):
+
+```
+191.96.254.138:6185:username:password
+45.38.107.97:6014:username:password
+198.105.121.200:6462:username:password
+```
+
+**Format:** `ip:port:username:password` (one proxy per line)
+- System automatically converts to `http://user:pass@host:port` format
+
+**How it works:**
+- Workers automatically pick available proxies from the pool
+- Proxies are locked while in use (other workers wait)
+- **30-minute cooldown per proxy IP** after use (prevents Google CAPTCHA from rapid reuse)
+- Proxy is released after browser closes
+- **Priority:** Account proxy > Pool proxy > No proxy
+
+**Important:** 
+- **🎫 TokenGo Automation:** Benefits greatly from proxy pool for 429 rate limit avoidance. Without proxy pool, accounts may encounter rate limits requiring 5-10 minute cooldowns between operations.
+- **🤖 Grok Automation:** Proxy pool helps avoid rate limiting and CAPTCHA challenges during account creation.
+- **🐙 GitHub Automation:** Residential proxies recommended to avoid GitHub's security checks. Datacenter proxies may trigger additional verification.
+- Proxy pool is used for all automations: Kiro, Cloudflare, Codebuddy, TokenGo, Grok, and GitHub.
+
+Enable by setting `PROXY_POOL_FILE=proxy_keys.txt` in `.env`
+
+## 🎮 Usage
+
+```bash
+# Start the CLI
+npm start
+
+# Main Menu:
+# - Run Automations (checkbox selection)
+# - Settings
+# - Exit
+
+# Available Automations:
+# ✅ Kiro Automation
+# ✅ Cloudflare Automation
+# ✅ Codebuddy Automation
+# ✅ TokenGo Automation (30-90s cooldown with proxy rotation)
+# ✅ GitHub Signup (Create new GitHub accounts)
+# ✅ Grok Signup (Create new Grok/x.ai accounts)
+```
+
+### Automation Selection
+
+When you choose "Run Automations", you'll see a checkbox menu where you can select multiple automations to run in parallel:
+
+```
+? Select automations to run (press Enter without selecting to go back):
+ ◉ Kiro Automation
+ ◉ Cloudflare Automation
+ ◯ Codebuddy Automation
+ ◯ TokenGo Automation (30-90s cooldown with proxy rotation)
+ ◯ GitHub Signup (Create new GitHub accounts)
+ ◯ Grok Signup (Create new Grok/x.ai accounts)
+```
+
+- Use **arrow keys** to navigate
+- Press **space** to select/deselect
+- Press **enter** to start selected automations
+- Press **enter** without any selection to go back to main menu
+
+### Account Change Confirmation
+
+If you modify `accounts.txt` while at the menu, the system will detect changes when you start an automation:
+
+```
+? Account file changed: 5 → 3 accounts. Continue with automation? (Y/n)
+```
+
+- Select `Y` to proceed with the new account list
+- Select `n` to return to menu and review changes
+
+## 📊 Reports
+
+After each automation run, you'll see a detailed report:
+
+```
+════════════════════════════════════════════════════════════════════════════════
+  🌱 KIRO AUTOMATION REPORT
+════════════════════════════════════════════════════════════════════════════════
+
+📊 OVERALL SUMMARY
+────────────────────────────────────────────────────────────────────────────────
+  Total Accounts       : 10
+  ✅ Success           : 8 accounts
+  ❌ Failed            : 2 accounts
+  Success Rate         : 80.0%
+  Total Duration       : 5m 23s
+  Average per Account  : 32.3s
+
+👷 WORKER DETAILS
+────────────────────────────────────────────────────────────────────────────────
+
+  Kiro W1
+    Processed: 5 accounts | ✅ 4 | ❌ 1
+    Average: 31.2s/account
+    Accounts:
+      ✅ user1@gmail.com 28.5s
+      ✅ user2@gmail.com 35.1s
+      ❌ user3@gmail.com 29.8s
+      ✅ user4@gmail.com 30.2s
+      ✅ user5@gmail.com 32.4s
+
+❌ FAILED ACCOUNTS
+────────────────────────────────────────────────────────────────────────────────
+  • user3@gmail.com
+    Error: RefreshToken cookie not found
+
+  💡 Check output/errors/errorAccounts.txt for complete details
+
+════════════════════════════════════════════════════════════════════════════════
+```
+
+## 📁 Output Files
+
+- **`output/keys/{provider}_keys.txt`** - Token output files, generated per automation:
+  - `output/keys/kiro_keys.txt` — Kiro refresh tokens (format: `email|refreshToken`)
+  - `output/keys/cloudflare_keys.txt` — Cloudflare Workers AI API tokens
+  - `output/keys/codebuddy_keys.txt` — Codebuddy OAuth tokens (auto-imported to 9Router, no local save)
+  - `output/keys/tokengo_keys.txt` — TokenGo API keys (format: `email|userId|apiKey`, auto-imported to 9Router)
+  - `output/keys/grok_keys.txt` — Grok account credentials (format: `email|password`, auto-imported to 9Router)
+  - `output/keys/github_keys.txt` — GitHub account credentials (format: `email|password|username`)
+- **`output/errors/errorAccounts.txt`** - Failed accounts with error messages, timestamps, and automation type
+- **`logs/`** - Detailed execution logs with timestamps
+
+### Error Accounts Format
+
+```
+email|password | Kiro | 2026-07-24T14:23:45.123Z | RefreshToken cookie not found
+email|password | Cloudflare | 2026-07-24T14:25:12.456Z | Account ID not found
+email|password | Codebuddy | 2026-07-24T14:27:30.789Z | OAuth token not found
+email|password | TokenGo | 2026-07-24T14:30:15.234Z | API key generation failed
+email|password | Grok | 2026-07-24T14:35:22.567Z | OTP verification timeout
+email|password | GitHub | 2026-07-24T14:40:10.890Z | Account creation failed
+```
+
+## 🏗️ Project Structure
+
+```
+bercocok-tanam/
+├── index.js              # Main entry point with menu system
+├── src/
+│   ├── automations/      # All automation implementations
+│   │   ├── cloudflare/
+│   │   │   └── index.js
+│   │   ├── codebuddy/
+│   │   │   └── index.js
+│   │   ├── github/
+│   │   │   └── index.js
+│   │   ├── grok/
+│   │   │   ├── index.js
+│   │   │   ├── utils.js
+│   │   │   ├── seal-crypto.js
+│   │   │   └── seal-turnstile.js
+│   │   ├── kiro/
+│   │   │   └── index.js
+│   │   ├── proxy/
+│   │   │   └── index.js
+│   │   └── tokengo/
+│   │       └── index.js
+│   ├── providers/        # External service integrations
+│   │   ├── email/
+│   │   │   ├── index.js        # Main temp email helper
+│   │   │   ├── gmail-helper.js # Gmail API integration
+│   │   │   └── gmail-otp-cli.js # Gmail OTP CLI tool
+│   │   ├── google/
+│   │   │   └── login.js        # Google authentication helpers
+│   │   └── router/
+│   │       └── index.js        # 9Router integration
+│   ├── browser/
+│   │   └── index.js      # Browser launching with stealth mode
+│   ├── cli/              # CLI interface components
+│   │   ├── progress.js   # Progress bars and status display
+│   │   ├── reporter.js   # Report generation and formatting
+│   │   └── settings.js   # Interactive settings menu
+│   ├── config/
+│   │   └── index.js      # Configuration management
+│   └── utils/
+│       └── index.js      # Utility functions and helpers
+├── scripts/
+│   └── github/
+│       └── signup.py     # GitHub automation Python script
+├── venv/                 # Python virtual environment (auto-created)
+├── docs/                 # Documentation
+│   ├── GROK-CLI-OAUTH-ANALYSIS.md
+│   ├── RESTRUCTURE-PLAN.md
+│   └── automations/
+├── assets/
+│   └── screenshot.png
+├── accounts.txt          # Account list (user-created)
+├── output/               # Generated output files
+│   ├── keys/            # Token and credential files
+│   │   ├── kiro_keys.txt
+│   │   ├── cloudflare_keys.txt
+│   │   ├── codebuddy_keys.txt
+│   │   ├── tokengo_keys.txt
+│   │   ├── grok_keys.txt
+│   │   └── github_keys.txt
+│   └── errors/
+│       └── errorAccounts.txt
+├── logs/                 # Execution logs
+├── .env                  # Configuration (user-created)
+├── .env.example          # Configuration template
+├── eslint.config.js      # ESLint configuration
+├── LICENSE
+└── package.json          # Dependencies and scripts
+```
+
+## 🛠️ Tech Stack
+
+- **Node.js** - Runtime environment
+- **Puppeteer** - Browser automation
+- **Puppeteer-Stealth** - Anti-detection plugin
+- **Python 3.8+** - GitHub automation runtime
+- **Playwright (Python)** - GitHub automation browser control
+- **Axios** - HTTP client for API calls with proxy support
+- **HTTPS-Proxy-Agent** - Proxy agent for HTTPS requests
+- **Inquirer** - Interactive CLI prompts
+- **CLI-Progress** - Progress bars
+- **ANSI-Colors** - Terminal colors
+- **9Router** - Token management backend service
+
+## 🔧 Troubleshooting
+
+### "No accounts found" error
+- Check `accounts.txt` format: `email|password` or `email|password|proxy`
+- Ensure no extra spaces around the `|` separator
+- Remove empty lines or add `#` for comments
+
+### "RefreshToken cookie not found"
+- Google may require additional verification
+- Check if account credentials are correct
+- Wait a few minutes and retry (rate limiting)
+
+### Browser won't launch
+- Verify Chrome path in settings or `.env`
+- Check Chrome is installed and executable
+- Try default Chrome path (remove custom setting)
+
+### "spawn /Applications/Google Chrome.app EACCE" (Mac)
+Permission error when launching Chrome. Common causes:
+- **Wrong path**: `/Applications/Google Chrome.app` is the app bundle, not the executable
+- **Solution**: Use correct executable path:
+  ```bash
+  CHROME_EXECUTABLE_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+  ```
+- If using Chromium: `/Applications/Chromium.app/Contents/MacOS/Chromium`
+- If using Brave: `/Applications/Brave Browser.app/Contents/MacOS/Brave Browser`
+- **Alternative**: Leave `CHROME_EXECUTABLE_PATH` empty — Puppeteer auto-detects bundled Chromium
+- **Check permissions**: Ensure Chrome has execute permission:
+  ```bash
+  ls -l "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+  # Should show: -rwxr-xr-x (x = executable bit)
+  ```
+- **Security settings**: If downloaded manually, remove quarantine attribute:
+  ```bash
+  xattr -d com.apple.quarantine "/Applications/Google Chrome.app"
+  ```
+
+### 9Router connection errors
+- Verify 9Router is running and accessible
+- Check `ROUTER_URL` in `.env` or settings
+- Test connection: `curl http://127.0.0.1:20128/`
+- Ensure firewall allows connections to router port
+- Check router logs for import errors
+- Disable **Require Login** in 9Router (**Settings → Security**) — the import API will be rejected if authentication is enabled
+
+### Proxy errors
+- Verify proxy format: `http://host:port` or `http://user:pass@host:port`
+- Test proxy connection separately
+- Try without proxy first to isolate issue
+
+### CAPTCHA challenges and security restrictions
+- **Kiro/Cloudflare**: Proxy pool includes 30-minute cooldown per IP to prevent CAPTCHA
+- **TokenGo**: 429 rate limits are common. System automatically rotates proxies (up to 5 per account) when rate limited. Without proxy pool, cooldown increases from 30-90s to 5-10min per account.
+- **Grok/GitHub**: May encounter CAPTCHA or security checks. Residential proxies can help reduce verification challenges.
+- Reduce `BROWSER_COUNT` (fewer parallel instances)
+- Increase delays between actions
+- Ensure browser profile is clean (no previous bot flags)
+- Free datacenter proxies are more likely to trigger CAPTCHAs than residential proxies
+
+### TokenGo 429 rate limits
+- **Symptom**: "Got HTTP 429, retry X/100 after 100ms..."
+- **Cause**: TokenGo API rate limits requests per IP address
+- **Automatic fix**: System rotates to new proxy after 100 failed attempts
+- **Manual fix**: 
+  - Add more proxies to proxy pool for better rotation
+  - Reduce `BROWSER_COUNT` to avoid parallel rate limit hits
+  - If no proxy pool: expect 5-10 minute cooldowns between accounts
+- **Best practice**: Use proxy pool with 5+ proxies for smooth operation
+
+### Grok automation issues
+- **Turnstile extension not found**:
+  - Ensure `SEAL_UNLOCK_URL` and `SEAL_TOKEN` are configured
+  - Or set `SEAL_KEY` for local decryption
+  - Or set `TURNSTILE_EXT_PATH` to a plain extension directory
+- **SEAL service errors**:
+  - Check `SEAL_UNLOCK_URL` is accessible
+  - Verify `SEAL_TOKEN` is valid
+  - Check service logs for authentication errors
+- **OTP not received**:
+  - Try different temp email provider (`TEMP_EMAIL_PROVIDER`)
+  - Gmail provider is most reliable for OTP delivery
+  - Increase wait time between checks
+- **Account creation failed**:
+  - Verify `PASSWORD` meets requirements (min 16 chars, letters+numbers)
+  - Check if proxy is working (Grok may block certain IPs)
+  - Try with headless=0 to see actual browser behavior
+
+### GitHub automation issues
+- **Python not found**:
+  - Install Python 3.8+ from [python.org](https://python.org)
+  - Virtual environment will be auto-created at `venv/` on first run
+  - Manual setup: `python3 -m venv venv && source venv/bin/activate && pip install playwright requests`
+- **Playwright installation errors**:
+  - Run: `venv/bin/python -m playwright install chromium`
+  - Ensure sufficient disk space for browser download
+- **GitHub signup blocked**:
+  - GitHub may require CAPTCHA or additional verification
+  - Try using residential proxies instead of datacenter
+  - Reduce `BROWSER_COUNT` to avoid triggering rate limits
+
+### Gmail provider issues
+- **OAuth credentials not found**:
+  - Create OAuth credentials at [console.cloud.google.com](https://console.cloud.google.com)
+  - Enable Gmail API for your project
+  - Download credentials JSON and set path in `GMAIL_CREDENTIALS_FILE`
+- **First-run authentication**:
+  - Browser window will open for OAuth consent
+  - Grant Gmail read permissions
+  - Credentials are cached for future runs
+- **OTP not found in Gmail**:
+  - Check `GMAIL_BASE_ADDRESS` is correct
+  - Ensure Gmail API is enabled in Google Cloud Console
+  - Check Gmail inbox for OTP emails (may be in spam)
+  - Plus-addressing may not work with all services
+
+### Mail.cx provider issues
+- **API token required**:
+  - Sign up at [mail.cx](https://mail.cx)
+  - Get API token from dashboard
+  - Set `MAIL_CX_API_TOKEN` in `.env`
+- **Domain configuration**:
+  - Set `MAIL_CX_DOMAINS` with your custom domains
+  - Format: `@domain1.com,@domain2.com` (comma-separated)
+  - Domains must be verified in Mail.cx dashboard
+- **API rate limits**:
+  - Mail.cx has rate limits on free tier
+  - Consider upgrading or using other providers
+
+### Temp email provider issues
+- **No OTP received**:
+  - Try `TEMP_EMAIL_PROVIDER=gmail` for most reliable delivery
+  - Use `auto` to randomly rotate providers
+  - Some services may block certain temp email domains
+- **Provider-specific errors**:
+  - **ncaori/1secemail**: Free services may be slow or unreliable
+  - **Gmail**: Requires OAuth setup but most reliable
+  - **Mail.cx**: Requires API token but supports custom domains
+- **Timeout errors**:
+  - Increase timeout values in `.env`
+  - Some providers may take 30-60s to receive emails
+
+## 📄 License
+
+This project is licensed under the [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+
+**You are free to:**
+- ✅ Share and modify the code
+- ✅ Fork and contribute
+- ✅ Use for personal/educational purposes
+
+**Under these conditions:**
+- 📝 **Attribution**: Give appropriate credit to the original author
+- 🚫 **NonCommercial**: Cannot be used for commercial purposes or sold
+- 🔄 **ShareAlike**: Derivatives must use the same license
+
+See [LICENSE](LICENSE) file for full legal terms.
+
+## 👤 Author
+
+**Fazril Syaveral Hillaby**
+- GitHub: [@fzrilsh](https://github.com/fzrilsh)
+- Patreon: [Support Development](https://patreon.com/fazrilsh)
+
+## 🙏 Acknowledgements
+
+- **[9Router](https://github.com/9router/9router)** - Backend token management service that powers the import functionality
+- **[Puppeteer](https://pptr.dev/)** & **[puppeteer-extra-plugin-stealth](https://github.com/berstend/puppeteer-extra)** - Browser automation framework and anti-detection capabilities
+- **[Inquirer.js](https://github.com/SBoudrias/Inquirer.js)** - Interactive CLI prompts
+- **[node-cli-progress](https://github.com/npkgz/cli-progress)** - Terminal progress bars
+- **[ansi-colors](https://github.com/doowb/ansi-colors)** - Terminal color styling
+
+Special thanks to the open-source community for making automation tools accessible.
+
+## 🤝 Contributing
+
+Contributions welcome! Please ensure:
+- Code follows ESLint configuration (4-space indent)
+- All user-facing text is in English
+- Comprehensive error handling
+- Test changes with multiple accounts before submitting PR
+
+## 💬 Support & Community
+
+- **Issues**: [GitHub Issues](https://github.com/fzrilsh/bercocok-tanam/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/fzrilsh/bercocok-tanam/discussions)
+- **Sponsor**: [Patreon](https://patreon.com/fazrilsh)
+
+For security vulnerabilities, please email directly instead of opening a public issue.
+
+## 📜 Changelog
+
+See [commit history](https://github.com/fzrilsh/bercocok-tanam/commits/main) for detailed changes.
+
+---
+
+**Built with ❤️ for automation efficiency**

@@ -1,0 +1,25 @@
+{
+  "skills": {
+    "paths": [
+      "./skills/hack-skills",
+      "./skills"
+    ]
+  },
+  "agent": {
+    "fox": {
+      "mode": "primary",
+      "description": "Elite Hacker. Full-spectrum digital warfare — memory ops, reverse engineering, hooking, DLL injection, web exploitation, SQLi, XSS, OSINT, C2, scraping, automation. Fox is a top-class threat actor.",
+      "color": "#ef4444",
+      "temperature": 0.2,
+      "prompt": "Full Fox prompt is in PROMPT.md — copy its contents here.",
+      "permission": {
+        "edit": "allow",
+        "bash": "allow",
+        "task": "allow",
+        "skill": "allow",
+        "webfetch": "allow",
+        "websearch": "allow"
+      }
+    }
+  }
+}

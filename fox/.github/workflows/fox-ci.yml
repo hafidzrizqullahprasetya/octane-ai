@@ -1,0 +1,174 @@
+name: Fox CI — Structure & Coverage Validation
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 6 * * 1'  # Every Monday 06:00 UTC
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate Directory Structure
+        run: |
+          required_dirs=(
+            "agents" "attack" "attack/benchmarks" "attack/mitre-attack" "attack/templates"
+            "config" "docs" "operations" "payloads" "shells"
+            "skills" "skills/hack-skills" "skills/fox-dorker" "skills/fox-sqli"
+            "training" "training/scenarios" "training/validation"
+            "vault" "vault/combos" "vault/hashes" "vault/tokens" "vault/keys"
+            "vault/sessions" "vault/logs" "vault/targets"
+          )
+          missing_dirs=()
+          for dir in "${required_dirs[@]}"; do
+            if [ ! -d "$dir" ]; then
+              missing_dirs+=("$dir")
+            fi
+          done
+          if [ ${#missing_dirs[@]} -gt 0 ]; then
+            echo "❌ Missing directories:"
+            for dir in "${missing_dirs[@]}"; do
+              echo "  - $dir"
+            done
+            exit 1
+          fi
+          echo "✅ All required directories exist"
+
+      - name: Validate SKILL.md Coverage
+        run: |
+          total=0
+          missing=0
+          for dir in skills/hack-skills/*/; do
+            total=$((total + 1))
+            if [ ! -f "$dir/SKILL.md" ]; then
+              echo "  ⚠️  Missing SKILL.md in $dir"
+              missing=$((missing + 1))
+            fi
+          done
+          coverage=$(( (total - missing) * 100 / total ))
+          echo "Skills: $((total - missing))/$total coverage ($coverage%)"
+          if [ $coverage -lt 95 ]; then
+            echo "❌ Skill coverage below 95%"
+            exit 1
+          fi
+          echo "✅ Skill coverage: $coverage%"
+
+      - name: Validate MITRE ATT&CK Coverage
+        run: |
+          mitre_files=(attack/mitre-attack/*.md)
+          expected=10  # 9 tactics + 1 index
+          if [ ${#mitre_files[@]} -lt $expected ]; then
+            echo "❌ MITRE files: ${#mitre_files[@]} (expected $expected+)"
+            exit 1
+          fi
+          echo "✅ MITRE files: ${#mitre_files[@]}"
+
+      - name: Validate Agent Definitions
+        run: |
+          agent_files=(agents/*.md)
+          if [ ${#agent_files[@]} -lt 5 ]; then
+            echo "❌ Agent definitions: ${#agent_files[@]} (expected 5+)"
+            exit 1
+          fi
+          echo "✅ Agent files: ${#agent_files[@]}"
+
+      - name: Validate Operational Templates
+        run: |
+          required_templates=("ROE.md" "OPPLAN.md" "DECON.md")
+          for t in "${required_templates[@]}"; do
+            if [ ! -f "attack/templates/$t" ]; then
+              echo "❌ Missing template: $t"
+              exit 1
+            fi
+          done
+          echo "✅ All operational templates present"
+
+      - name: Validate Benchmark Count
+        run: |
+          count=$(find attack/benchmarks -name "*.md" ! -name "00-framework.md" | wc -l)
+          echo "Benchmark files: $count"
+          if [ $count -lt 50 ]; then
+            echo "⚠️  Benchmark count below 50 (currently $count)"
+            echo "Consider adding more benchmark test cases."
+          else
+            echo "✅ Benchmark count: $count"
+          fi
+
+      - name: Validate README Links
+        run: |
+          if [ -f README.md ]; then
+            # Check all markdown links resolve
+            bad_links=0
+            while IFS= read -r link; do
+              target=$(echo "$link" | sed -n 's/.*\[\(.*\)\](\(.*\))/\2/p')
+              if [ -n "$target" ] && [ ! -f "$target" ] && [ ! -d "$target" ]; then
+                # Skip external links
+                if echo "$target" | grep -qv "^https\?://"; then
+                  echo "  ⚠️  Broken link: $target"
+                  bad_links=$((bad_links + 1))
+                fi
+              fi
+            done < <(grep -oP '\[.*?\]\(.*?\)' README.md)
+            if [ $bad_links -gt 0 ]; then
+              echo "⚠️  $bad_links broken internal links in README"
+            else
+              echo "✅ README links OK"
+            fi
+          fi
+
+      - name: Validate Architecture Diagram
+        run: |
+          if [ -f docs/architecture.mmd ]; then
+            echo "✅ Architecture diagram exists"
+          else
+            echo "⚠️  No architecture diagram found"
+          fi
+
+      - name: Validate Vault Encryption
+        run: |
+          if [ -f vault/vault.py ]; then
+            if grep -q "AESGCM\|AES-256" vault/vault.py; then
+              echo "✅ Vault uses AES-256 encryption"
+            else
+              echo "⚠️  vault.py found but may not use AES-256"
+            fi
+          else
+            echo "⚠️  vault/vault.py not found"
+          fi
+
+      - name: Generate Coverage Report
+        run: |
+          report="fox-ci-report-$(date +%Y%m%d).md"
+          {
+            echo "# Fox CI Coverage Report"
+            echo "**Date**: $(date)"
+            echo ""
+            echo "## Skills"
+            skill_count=$(find skills/hack-skills -name "SKILL.md" | wc -l)
+            skill_total=$(find skills/hack-skills -mindepth 1 -maxdepth 1 -type d | wc -l)
+            echo "- SKILL.md files: $skill_count/$skill_total"
+            echo ""
+            echo "## Benchmarks"
+            bench_count=$(find attack/benchmarks -name "*.md" ! -name "00-framework.md" | wc -l)
+            echo "- Benchmark files: $bench_count"
+            echo ""
+            echo "## Files"
+            total_files=$(find . -type f -not -path './.git/*' | wc -l)
+            echo "- Total files: $total_files"
+          } > "$report"
+          echo "✅ Report generated: $report"
+
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: fox-ci-report
+          path: fox-ci-report-*.md

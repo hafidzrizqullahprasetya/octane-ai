@@ -1,0 +1,93 @@
+# Fox CI — GitLab Pipeline
+stages:
+  - validate
+  - coverage
+
+validate-structure:
+  stage: validate
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache bash findutils grep
+  script:
+    - |
+      echo "=== Directory Structure ==="
+      for dir in agents attack attack/benchmarks attack/mitre-attack attack/templates \
+                 config docs operations payloads shells \
+                 skills skills/hack-skills training training/scenarios \
+                 vault vault/combos vault/hashes vault/tokens vault/keys; do
+        if [ -d "$dir" ]; then
+          echo "  ✅ $dir"
+        else
+          echo "  ❌ $dir"
+          exit 1
+        fi
+      done
+
+validate-skills:
+  stage: validate
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache bash findutils
+  script:
+    - |
+      total=0
+      missing=0
+      for dir in skills/hack-skills/*/; do
+        total=$((total + 1))
+        if [ ! -f "$dir/SKILL.md" ]; then
+          echo "  ⚠️  Missing SKILL.md in $dir"
+          missing=$((missing + 1))
+        fi
+      done
+      coverage=$(( (total - missing) * 100 / total ))
+      echo "Skill coverage: $coverage%"
+      if [ $coverage -lt 95 ]; then
+        echo "❌ Coverage below 95%"
+        exit 1
+      fi
+      echo "✅ Skills OK ($((total - missing))/$total)"
+
+validate-benchmarks:
+  stage: validate
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache bash findutils
+  script:
+    - |
+      count=$(find attack/benchmarks -name "*.md" ! -name "00-framework.md" | wc -l)
+      echo "Benchmark test cases: $count"
+      if [ $count -lt 50 ]; then
+        echo "⚠️  Below target of 50"
+      fi
+
+validate-templates:
+  stage: validate
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache bash
+  script:
+    - |
+      for t in ROE.md OPPLAN.md DECON.md; do
+        if [ -f "attack/templates/$t" ]; then
+          echo "  ✅ $t"
+        else
+          echo "  ❌ Missing $t"
+          exit 1
+        fi
+      done
+
+coverage-report:
+  stage: coverage
+  image: alpine:latest
+  script:
+    - |
+      echo "# Fox CI Coverage Report" > fox-ci-report.md
+      echo "" >> fox-ci-report.md
+      echo "- Skills: $(find skills/hack-skills -name SKILL.md | wc -l)" >> fox-ci-report.md
+      echo "- Benchmarks: $(find attack/benchmarks -name '*.md' ! -name '00-framework.md' | wc -l)" >> fox-ci-report.md
+      echo "- Agents: $(find agents -name '*.md' | wc -l)" >> fox-ci-report.md
+      echo "- Total files: $(find . -type f -not -path './.git/*' | wc -l)" >> fox-ci-report.md
+      cat fox-ci-report.md
+  artifacts:
+    paths:
+      - fox-ci-report.md

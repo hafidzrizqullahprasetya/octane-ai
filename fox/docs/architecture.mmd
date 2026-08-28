@@ -1,0 +1,84 @@
+```mermaid
+graph TB
+    subgraph Operator["🎯 Operator (Lhuciver/Jack)"]
+        A["Command & Control"]
+    end
+
+    subgraph Fox["🦊 Fox — Elite Hacker AI"]
+        B["🧠 Core Brain<br/>Autonomy Protocol<br/>Kill Chain Engine"]
+        
+        subgraph Knowledge["📚 Knowledge Base"]
+            K1["102 Hack Skills<br/>SQLi, RCE, AD, etc."]
+            K2["MITRE ATT&CK v15<br/>46 Techniques"]
+            K3["Training Scenarios<br/>32 Scenarios"]
+        end
+
+        subgraph Attack["⚔️ Attack Engine"]
+            A1["Recon Phase<br/>Subdomain → Port → Tech → Dir"]
+            A2["Weaponization<br/>Vuln Matching + Payloads"]
+            A3["Initial Access<br/>SQLi → SSRF → Upload → CMDi"]
+            A4["Foothold<br/>Webshells → Reverse Shells → C2"]
+            A5["Privesc<br/>Linux SUID → Windows Potato → AD"]
+            A6["Lateral Movement<br/>PtH → WMI → Kerberos"]
+            A7["Exfil & Report<br/>Data Grab → Vault → Report"]
+        end
+
+        subgraph Ops["📦 Operations"]
+            O1["Multi-Target Mode<br/>3 Parallel Targets"]
+            O2["GRABBER Engine<br/>Auto Cred Extraction"]
+            O3["Fox Vault<br/>AES-256-GCM Encrypted"]
+            O4["Reporting System<br/>Standardized Ops Reports"]
+        end
+
+        subgraph Boot["🚀 Bootstrap"]
+            B1["ACTIVATE.md<br/>One-shot Trigger"]
+            B2["FLOW.md<br/>Tool Selection Guide"]
+            B3["PROMPT.md<br/>Full System Prompt"]
+        end
+
+        subgraph KillChain["💀 Kill Chain Flow"]
+            C1["PHASE 1: RECON<br/>0-2 min"]
+            C2["PHASE 2: WEAPONIZE<br/>Instant"]
+            C3["PHASE 3: INITIAL ACCESS<br/>Vectors A-H"]
+            C4["PHASE 3.5: AUTO-PWN<br/>SQLi→Dump, Upload→Shell"]
+            C5["PHASE 4: FOOTHOLD<br/>Persistence"]
+            C6["PHASE 5: PRIVESC<br/>Root/SYSTEM/DA"]
+            C7["PHASE 6: LATERAL<br/>Pivot & Own"]
+            C8["PHASE 7: EXFIL<br/>Report"]
+        end
+    end
+
+    A -->|"Target"| B
+    B --> Knowledge
+    B --> Attack
+    B --> Ops
+    B --> Boot
+    B --> KillChain
+    
+    A1 --> A2 --> A3 --> A4 --> A5 --> A6 --> A7
+    C1 --> C2 --> C3 --> C4 --> C5 --> C6 --> C7 --> C8
+```
+
+```
+╔══════════════════════════════════════════════════════════════╗
+║                    🎯 OPERATOR (JACK)                        ║
+║              Command & Control — Target Input                 ║
+╚══════════════════════════════════════════════════════════════╝
+                           │
+                           ▼
+╔══════════════════════════════════════════════════════════════╗
+║                  🦊 FOX — ELITE HACKER AI                    ║
+╠══════════════════════════════════════════════════════════════╣
+║ ┌─────────────────┐  ┌─────────────────┐  ┌───────────────┐ ║
+║ │  KNOWLEDGE BASE  │  │  ATTACK ENGINE   │  │  OPERATIONS    │ ║
+║ │  102 Hack Skills │  │  Recon→Weaponize │  │  Multi-Target  │ ║
+║ │  MITRE ATT&CK v15│  │  SQLi→Upload→RCE │  │  GRABBER       │ ║
+║ │  32 Scenarios    │  │  Privesc→Lateral  │  │  Vault (AES)   │ ║
+║ └─────────────────┘  └─────────────────┘  └───────────────┘ ║
+║ ┌────────────────────────────────────────────────────────┐   ║
+║ │              KILL CHAIN (7 Phases)                      │   ║
+║ │  RECON → WEAPONIZE → ACCESS → FOOTHOLD → PRIVESC →     │   ║
+║ │  → LATERAL → EXFILTRATION & REPORT                     │   ║
+║ └────────────────────────────────────────────────────────┘   ║
+╚══════════════════════════════════════════════════════════════╝
+```

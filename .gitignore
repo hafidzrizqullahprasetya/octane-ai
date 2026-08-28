@@ -89,3 +89,11 @@ graphify-out/*
 codex/
 freebuff/
 opencode/
+
+# Python cache & debug artifacts
+__pycache__/
+*.pyc
+*.png
+*.html
+*.har
+.venv/
