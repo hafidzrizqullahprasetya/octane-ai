@@ -34,8 +34,8 @@ export default {
     textIcon: "OT",
     website: "https://octaneai.com",
     notice: {
-      signupUrl: "https://freebuff.com",
-      text: "OctaneAI provider (powered by Freebuff multi-account pool). High-performance AI proxy with custom thinking levels.",
+      signupUrl: "https://codebuff.com",
+      text: "Octane AI provider (high-performance multi-account AI proxy with custom thinking levels).",
     },
   },
   category: "free",
