@@ -12,8 +12,11 @@ const proxyClientMaxBodySize = process.env.NINEROUTER_PROXY_CLIENT_MAX_BODY_SIZE
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   allowedDevOrigins: [
+    "admin.octane.web.id",
+    "*.octane.web.id",
     "9router.pempekasliwongkito.my.id",
     "*.pempekasliwongkito.my.id",
+    "localhost:20128",
     "localhost:20129",
     "localhost:20127",
   ],
