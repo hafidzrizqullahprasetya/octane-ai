@@ -1,5 +1,6 @@
 services:
   octane-ai:
+    build: .
     image: ghcr.io/hafidzrizqullahprasetya/octane-ai:latest
     container_name: octane-ai
     restart: always
