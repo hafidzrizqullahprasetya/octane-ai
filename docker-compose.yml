@@ -1,12 +1,12 @@
 services:
-  9router:
-    image: mhiqrambhrng/9router-mibp-version:latest
-    container_name: 9router
+  octane-ai:
+    image: ghcr.io/hafidzrizqullahprasetya/octane-ai:latest
+    container_name: octane-ai
     restart: always
     ports:
       - "20128:20128"
     volumes:
-      - 9router-data:/app/data
+      - octane-data:/app/data
     env_file:
       - .env
     environment:
@@ -25,6 +25,18 @@ services:
     ports:
       - "8787:8787"
 
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /root/.docker/config.json:/config.json:ro
+    environment:
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_POLL_INTERVAL=300
+      - WATCHTOWER_INCLUDE_STOPPED=false
+
 volumes:
-  9router-data:
-    name: 9router-data
+  octane-data:
+    name: octane-data

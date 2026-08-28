@@ -18,7 +18,7 @@ RUN npm run build
 FROM ${NODE_IMAGE} AS runner
 WORKDIR /app
 
-LABEL org.opencontainers.image.title="9router"
+LABEL org.opencontainers.image.title="octane-ai"
 
 ENV NODE_ENV=production
 ENV PORT=20128
@@ -29,7 +29,6 @@ ENV DATA_DIR=/app/data
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/custom-server.js ./custom-server.js
 COPY --from=builder /app/open-sse ./open-sse
 # Next file tracing can omit sibling files; MITM runs server.js as a separate process.
 COPY --from=builder /app/src/mitm ./src/mitm
@@ -57,4 +56,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:20128/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["node", "custom-server.js"]
+CMD ["node", "server.js"]
