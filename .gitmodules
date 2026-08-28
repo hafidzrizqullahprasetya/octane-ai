@@ -10,3 +10,6 @@
 [submodule "claude-code"]
 	path = claude-code
 	url = https://github.com/anthropics/claude-code.git
+[submodule "github-regkit-private"]
+	path = github-regkit-private
+	url = https://github.com/hafidzrizqullahprasetya/github-regkit-private.git
