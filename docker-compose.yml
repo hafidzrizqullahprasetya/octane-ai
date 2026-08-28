@@ -32,6 +32,7 @@ services:
     restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - /home/hafidzprasetya/.docker/config.json:/config.json:ro
     environment:
       - DOCKER_API_VERSION=1.44
       - WATCHTOWER_CLEANUP=true
