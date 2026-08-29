@@ -7,7 +7,11 @@ import { resolveSessionId } from "../utils/sessionManager.js";
 
 const OPENCODE_UA = "opencode";
 // Models served by /zen/v1/responses; every other model stays on /chat/completions.
-const RESPONSES_MODELS = new Set(["muse-spark-1.2-contributor-free"]);
+const RESPONSES_MODELS = new Set([
+  "muse-spark-1.2-contributor-free",
+  "muse-spark-1.2",
+  "muse-spark",
+]);
 
 function generateRequestId() {
   return `msg_${crypto.randomUUID().replace(/-/g, "")}`;
@@ -66,11 +70,6 @@ import { openaiResponsesToOpenAIResponse } from "../translator/response/openai-r
 import { initState } from "../translator/index.js";
 import { proxyAwareFetch } from "../utils/proxyFetch.js";
 
-const RESPONSES_MODELS = new Set([
-  "muse-spark-1.2-contributor-free",
-  "muse-spark-1.2",
-  "muse-spark",
-]);
 
 // OpenCode free tier is limited per egress IP — a 429/403 with a limit-ish
 // body means the POOL's IP is exhausted, not the account. Declare it
