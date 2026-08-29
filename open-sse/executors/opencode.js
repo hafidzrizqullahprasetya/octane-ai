@@ -103,14 +103,17 @@ export class OpenCodeExecutor extends BaseExecutor {
     const effort = suffixParsed?.override?.level || body?.reasoning_effort || "xhigh";
 
     if (RESPONSES_MODELS.has(resolvedModel) || isResponsesModel(model)) {
-      const enrichedBody = {
-        ...body,
-        reasoning_effort: effort,
-      };
-      if (enrichedBody?.messages) {
-        return openaiToOpenAIResponsesRequest(resolvedModel, enrichedBody, true, credentials);
+      if (body?.messages && Array.isArray(body.messages) && body.messages.length > 0) {
+        const enriched = { ...body, reasoning_effort: effort };
+        return openaiToOpenAIResponsesRequest(resolvedModel, enriched, true, credentials);
       }
-      return { ...enrichedBody, model: resolvedModel };
+      const res = { ...body, model: resolvedModel };
+      res.reasoning = { effort, summary: "auto" };
+      delete res.reasoning_effort;
+      delete res.messages;
+      delete res.max_tokens;
+      delete res.max_completion_tokens;
+      return res;
     }
 
     const resolvedBody = { ...body, model: resolvedModel };
