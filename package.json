@@ -14,7 +14,8 @@
     "build:bun": "bun --bun next build --webpack",
     "start:bun": "bun --bun next start --port 20127",
     "cli:pack": "npm --prefix cli run pack:cli",
-    "cli:publish": "npm --prefix cli run publish:cli"
+    "cli:publish": "npm --prefix cli run publish:cli",
+    "release": "node scripts/release-to-main.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
