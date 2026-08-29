@@ -70,6 +70,8 @@ try {
   console.log("🔄 4/4 Returning to dev and syncing git history...");
   run("git checkout dev");
   run('git merge main -m "merge: sync dev with latest release on main"');
+  run("git add .gitmodules bercocok-tanam claude-code codex freebuff github-farm github-regkit-private opencode outlook-creator 2>/dev/null || true");
+  try { run('git commit -m "chore: retain submodules index on dev"'); } catch {}
   run("git push origin dev");
 
   console.log("\n✨ RELEASE COMPLETE!");
