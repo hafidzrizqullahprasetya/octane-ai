@@ -88,16 +88,6 @@ graphify-out/*
 .next-analyze/*
 bitwarden/
 
-# Submodules (active on dev branch, ignored on main)
-bercocok-tanam/
-claude-code/
-codex/
-freebuff/
-github-farm/
-github-regkit-private/
-opencode/
-outlook-creator/
-
 # Python cache & debug artifacts
 __pycache__/
 *.pyc
