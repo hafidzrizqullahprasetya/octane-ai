@@ -44,7 +44,7 @@ export function parseModel(modelStr) {
 
     // Route muse-spark under ot/ to opencode
     if ((providerOrAlias === "ot" || providerOrAlias === "freebuff" || providerOrAlias === "octane" || providerOrAlias === "octaneai") && model.startsWith("muse-spark")) {
-      return { provider: "opencode", model, isAlias: false, providerAlias: "oc" };
+      return { provider: "opencode", model, isAlias: false, providerAlias: "ot" };
     }
 
     // Route glm-, minimax-, and kimi- models under ot/ to codebuddy-intl (Gacor full flagship route)
