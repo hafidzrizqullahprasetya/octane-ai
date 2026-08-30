@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, Button, Badge } from "@/shared/components";
+import { Card, Button, Badge, Toggle } from "@/shared/components";
 
 const DEFAULT_ORDER = ["freebuff", "opencode", "codebuddy-intl", "codebuddy-cn", "qoder"];
 
 export default function OctaneOrderCard() {
   const [order, setOrder] = useState(DEFAULT_ORDER);
+  const [fallbackEnabled, setFallbackEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -17,6 +18,9 @@ export default function OctaneOrderCard() {
       .then((data) => {
         if (Array.isArray(data.octaneProviderOrder) && data.octaneProviderOrder.length) {
           setOrder(data.octaneProviderOrder);
+        }
+        if (typeof data.octaneFallbackEnabled === "boolean") {
+          setFallbackEnabled(data.octaneFallbackEnabled);
         }
         setLoading(false);
       })
@@ -38,7 +42,7 @@ export default function OctaneOrderCard() {
       const res = await fetch("/api/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ octaneProviderOrder: order }),
+        body: JSON.stringify({ octaneProviderOrder: order, octaneFallbackEnabled: fallbackEnabled }),
       });
       if (res.ok) setHasChanges(false);
     } finally {
@@ -61,9 +65,16 @@ export default function OctaneOrderCard() {
             <span className="material-symbols-outlined text-orange-500">rocket_launch</span>
             Octane AI — Provider Order
           </h3>
-          <p className="text-xs text-text-muted mt-1">Semua model <code>ot/</code> tanpa prefix upstream. Jika model ada di beberapa provider (misal <code>muse</code> di freebuff & opencode), urutan ini menentukan fallback.</p>
+          <p className="text-xs text-text-muted mt-1">Semua model <code>ot/</code> tanpa prefix upstream. Jika model ada di beberapa provider (misal <code>muse</code> di freebuff & opencode), urutan ini menentukan fallback. Toggle off untuk test freebuff murni.</p>
         </div>
         <Badge variant="default" size="sm">ot/</Badge>
+      </div>
+      <div className="flex items-center justify-between rounded-lg border border-border bg-orange-50 dark:bg-orange-950/20 px-3 py-2 mb-3">
+        <div>
+          <p className="text-sm font-medium">Fallback ke provider lain</p>
+          <p className="text-xs text-text-muted">Off = cegah 401, hanya coba freebuff dulu (test murni). On = kalau freebuff 401/429, coba opencode/codebuddy.</p>
+        </div>
+        <Toggle checked={fallbackEnabled} onChange={(v) => { setFallbackEnabled(v); setHasChanges(true); }} />
       </div>
 
       <div className="space-y-2">
