@@ -25,6 +25,7 @@ import { useNotificationStore } from "@/store/notificationStore";
 import { useHeaderSearchStore } from "@/store/headerSearchStore";
 import ModelAvailabilityBadge from "./components/ModelAvailabilityBadge";
 import AddCompatibleModal from "./components/AddCompatibleModal";
+import OctaneOrderCard from "./components/OctaneOrderCard";
 
 function getStatusDisplay(connected, error, errorCode) {
   const parts = [];
@@ -373,6 +374,9 @@ export default function ProvidersPage() {
           <p className="text-text-muted text-sm">No providers match your search</p>
         </div>
       )}
+
+      {/* Octane AI — Unified ot/ Provider */}
+      <OctaneOrderCard />
 
       {/* Custom Providers (OpenAI/Anthropic Compatible) — dynamic */}
       <div className="flex flex-col gap-4">
