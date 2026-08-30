@@ -12,14 +12,15 @@ import { DefaultExecutor } from "./default.js";
  * ["freebuff","opencode","codebuddy-intl","codebuddy-cn"].
  */
 
-// Map ot/ clean id -> upstream per provider (for routing)
-// Freebuff uses crof/openai/meta, Opencode uses its own free ids
+// Map ot/ clean id -> provider yang punya model itu (urutan = prioritas)
+// Kalau model ada di beberapa provider (muse), urutan di settings.octaneProviderOrder menentukan yang di-top
 const MODEL_PROVIDER_MAP = {
   "gpt-5.6-luna": ["freebuff"],
-  "kimi-k3": ["freebuff"],
+  "kimi-k3": ["freebuff", "codebuddy-intl", "codebuddy-cn"],
   "muse-spark-1.2": ["freebuff", "opencode"],
   "deepseek-v4-flash": ["freebuff"],
   "mimo-v2.5": ["freebuff", "opencode"],
+  "muse-spark-1.2-contributor-free": ["opencode"],
   "ox-alpha-free": ["opencode"],
   "mimo-v2.5-free": ["opencode"],
   "nemotron-3.5-lightning-free": ["opencode"],
