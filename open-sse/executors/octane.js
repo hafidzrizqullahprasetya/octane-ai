@@ -89,13 +89,27 @@ export class OctaneExecutor extends BaseExecutor {
     const tryOrder = fallbackEnabled ? order : [order[0]];
 
     let lastError = null;
+    // Delivery tanpa masuk mall: resepsionis harus punya daftar stok gudang.
+    // Jika ctx.providerConnections tidak dikirim (chatCore tidak inject), ambil langsung dari DB biar ot/ tetap bisa delivery ke freebuff top order.
+    let allConnections = ctx.providerConnections;
+    if (!allConnections) {
+      try {
+        const mod = await import("../../src/lib/db/repos/connectionsRepo.js");
+        if (mod.getProviderConnections) {
+          allConnections = await mod.getProviderConnections({ isActive: true });
+        }
+      } catch (e) {
+        log?.warn?.("OCTANE", `Failed to load providerConnections: ${e.message}`);
+      }
+    }
     for (const providerId of tryOrder) {
       const executor = executorMap[providerId] || new DefaultExecutor(providerId);
       // Strict model per akun: cari semua koneksi provider itu yang assignedModel cocok dengan cleanModel
       // Biar test per model pakai akun yang memang di-assign untuk model itu, dan reuse sesi yang sama (tidak bikin sesi baru per test)
       let candidates = [];
-      if (ctx.providerConnections) {
-        candidates = ctx.providerConnections
+      const sourceConns = allConnections || ctx.providerConnections || [];
+      if (sourceConns.length) {
+        candidates = sourceConns
           .filter(c => c.provider === providerId && c.testStatus === "active")
           .filter(c => {
             const assigned = c.providerSpecificData?.assignedModel || c.providerSpecificData?.freebuffModel || "";
@@ -115,7 +129,7 @@ export class OctaneExecutor extends BaseExecutor {
         }
         // Fallback: kalau tidak ada strict match tapi ada active, pakai yang pertama (untuk opencode yang tidak strict)
         if (candidates.length === 0) {
-          const any = ctx.providerConnections.find(c => c.provider === providerId && c.testStatus === "active");
+          const any = sourceConns.find(c => c.provider === providerId && c.testStatus === "active");
           if (any) candidates = [any];
         }
       }
