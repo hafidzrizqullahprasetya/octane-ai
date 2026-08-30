@@ -88,6 +88,9 @@ export default {
     { id: "deepseek-v4-flash(max)", name: "DeepSeek V4 Flash (Max)", upstreamModelId: "deepseek/deepseek-v4-flash" },
     { id: "deepseek-v4-flash", name: "DeepSeek V4 Flash (Default)", upstreamModelId: "deepseek/deepseek-v4-flash" },
 
+    // 🌀 MiMo V2.5 (Unlimited Free)
+    { id: "mimo-v2.5", name: "MiMo V2.5", upstreamModelId: "mimo/mimo-v2.5" },
+
     // 🎨 Meta Muse Spark 1.2 (OpenCode Route)
     { id: "muse-spark-1.2(minimal)", name: "Muse Spark 1.2 (Minimal)", upstreamModelId: "meta/muse-spark-1.2" },
     { id: "muse-spark-1.2(low)", name: "Muse Spark 1.2 (Low)", upstreamModelId: "meta/muse-spark-1.2" },
