@@ -34,6 +34,20 @@ function getOctaneOrder(settings) {
   return ["freebuff", "opencode", "codebuddy-intl", "codebuddy-cn", "qoder"];
 }
 
+function isFallbackEnabled(settings) {
+  // Default false — user wants freebuff murni, tidak fallback ke codebuddy untuk test
+  if (typeof settings?.octaneFallbackEnabled === "boolean") return settings.octaneFallbackEnabled;
+  return false;
+}
+
+function shouldPrevent401(providerCreds) {
+  // Cegah 401 dengan cek lastError/testStatus sebelum hit upstream
+  if (!providerCreds) return true;
+  if (providerCreds.testStatus === "error" && providerCreds.lastError?.includes("401")) return true;
+  if (providerCreds.lastError?.includes("Not Enough Credits") || providerCreds.lastError?.includes("re-login")) return true;
+  return false;
+}
+
 export class OctaneExecutor extends BaseExecutor {
   constructor() {
     super("octane", PROVIDERS.octane || PROVIDERS.freebuff);
@@ -69,8 +83,12 @@ export class OctaneExecutor extends BaseExecutor {
       "codebuddy-intl": new DefaultExecutor("codebuddy-intl"),
       "codebuddy-cn": new DefaultExecutor("codebuddy-cn"),
     };
+    const fallbackEnabled = isFallbackEnabled(ctx.settings);
+    // Jika fallback mati, cuma coba provider pertama (freebuff) — biar test murni
+    const tryOrder = fallbackEnabled ? order : [order[0]];
+
     let lastError = null;
-    for (const providerId of order) {
+    for (const providerId of tryOrder) {
       const executor = executorMap[providerId] || new DefaultExecutor(providerId);
       // Need credentials for that provider — ctx.credentials is for octane, need to find provider's credentials
       // For now, try to find connection for that provider via global providerConnections (injected via ctx)
@@ -83,6 +101,15 @@ export class OctaneExecutor extends BaseExecutor {
         if (conn) {
           providerCreds = { accessToken: conn.accessToken, ...conn, providerSpecificData: conn.providerSpecificData };
         }
+      }
+      // Cegah 401: jika creds sudah error 401, skip dan suruh re-login (jangan hit upstream)
+      if (shouldPrevent401(providerCreds)) {
+        const err = new Error(`Freebuff auth 401 — re-login di dashboard untuk ${providerId} (gh ${providerCreds?.name || providerCreds?.email || "?"})`);
+        err.status = 401;
+        lastError = err;
+        log?.warn?.("OCTANE", `Skip ${providerId} ot/${cleanModel} — token 401, perlu re-login`);
+        if (!fallbackEnabled) throw err;
+        continue;
       }
       // If no specific creds, try the passed credentials (for free tier, token may be generic)
       if (!providerCreds && ctx.credentials) {
