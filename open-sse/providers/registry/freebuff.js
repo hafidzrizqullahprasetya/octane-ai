@@ -24,9 +24,9 @@ export default {
   id: "freebuff",
   priority: 45,
   hasFree: true,
-  alias: "fb",
-  aliases: ["fb", "codebuff", "freebuff"],
-  uiAlias: "fb",
+  alias: "ot",
+  aliases: ["ot", "fb", "codebuff", "freebuff"],
+  uiAlias: "ot",
   display: {
     name: "Freebuff",
     icon: "bolt",
