@@ -2,9 +2,9 @@ export default {
   id: "octane",
   priority: 1,
   hasFree: true,
-  alias: "ot",
-  aliases: ["ot", "octane"],
-  uiAlias: "ot",
+  alias: "oct",
+  aliases: ["oct", "octane"],
+  uiAlias: "oct",
   display: {
     name: "Octane AI",
     icon: "rocket_launch",
