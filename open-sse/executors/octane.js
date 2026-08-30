@@ -90,56 +90,74 @@ export class OctaneExecutor extends BaseExecutor {
     let lastError = null;
     for (const providerId of tryOrder) {
       const executor = executorMap[providerId] || new DefaultExecutor(providerId);
-      // Need credentials for that provider — ctx.credentials is for octane, need to find provider's credentials
-      // For now, try to find connection for that provider via global providerConnections (injected via ctx)
-      // Fallback: use the same credentials if provider is freebuff/opencode with same token type
-      // In Octane AI, all ot/ models share the same pool — we try each provider's executor with its own credentials
-      // If credentials not found, skip
-      let providerCreds = null;
+      // Strict model per akun: cari semua koneksi provider itu yang assignedModel cocok dengan cleanModel
+      // Biar test per model pakai akun yang memang di-assign untuk model itu, dan reuse sesi yang sama (tidak bikin sesi baru per test)
+      let candidates = [];
       if (ctx.providerConnections) {
-        const conn = ctx.providerConnections.find(c => c.provider === providerId && c.testStatus === "active");
-        if (conn) {
-          providerCreds = { accessToken: conn.accessToken, ...conn, providerSpecificData: conn.providerSpecificData };
+        candidates = ctx.providerConnections
+          .filter(c => c.provider === providerId && c.testStatus === "active")
+          .filter(c => {
+            const assigned = c.providerSpecificData?.assignedModel || c.providerSpecificData?.freebuffModel || "";
+            const baseAssigned = assigned.split("(")[0].trim();
+            const baseClean = cleanModel.split("(")[0].trim();
+            // Untuk freebuff strict, harus match assignedModel
+            if (providerId === "freebuff" && assigned) {
+              return baseAssigned === baseClean || assigned === cleanModel;
+            }
+            return true;
+          })
+          .sort((a, b) => (a.priority || 999) - (b.priority || 999));
+        // Kalau strict dan tidak ada yang match, skip provider ini
+        if (providerId === "freebuff" && candidates.length === 0) {
+          log?.warn?.("OCTANE", `No strict match for ot/${cleanModel} in ${providerId} — skip`);
+          continue;
+        }
+        // Fallback: kalau tidak ada strict match tapi ada active, pakai yang pertama (untuk opencode yang tidak strict)
+        if (candidates.length === 0) {
+          const any = ctx.providerConnections.find(c => c.provider === providerId && c.testStatus === "active");
+          if (any) candidates = [any];
         }
       }
-      // Cegah 401: jika creds sudah error 401, skip dan suruh re-login (jangan hit upstream)
-      if (shouldPrevent401(providerCreds)) {
-        const err = new Error(`Freebuff auth 401 — re-login di dashboard untuk ${providerId} (gh ${providerCreds?.name || providerCreds?.email || "?"})`);
-        err.status = 401;
-        lastError = err;
-        log?.warn?.("OCTANE", `Skip ${providerId} ot/${cleanModel} — token 401, perlu re-login`);
-        if (!fallbackEnabled) throw err;
-        continue;
-      }
-      // If no specific creds, try the passed credentials (for free tier, token may be generic)
-      if (!providerCreds && ctx.credentials) {
-        providerCreds = ctx.credentials;
-      }
-      if (!providerCreds) continue;
+      // Coba tiap kandidat akun yang strict match (reuse sesi per akun, tidak bikin sesi baru per test)
+      for (const conn of candidates) {
+        let providerCreds = { accessToken: conn.accessToken, ...conn, providerSpecificData: conn.providerSpecificData };
+        // Cegah 401: jika creds sudah error 401, skip dan suruh re-login (jangan hit upstream)
+        if (shouldPrevent401(providerCreds)) {
+          const err = new Error(`Freebuff auth 401 — re-login di dashboard untuk ${providerId} (gh ${providerCreds?.name || providerCreds?.email || "?"})`);
+          err.status = 401;
+          lastError = err;
+          log?.warn?.("OCTANE", `Skip ${providerId} ot/${cleanModel} gh ${providerCreds?.name} — token 401, perlu re-login`);
+          continue;
+        }
+        // Pakai proxy khusus per akun (biar tidak semua numpuk 1 IP)
+        const connProxyOptions = conn.providerSpecificData?.proxyPoolIds?.length
+          ? { proxyPoolIds: conn.providerSpecificData.proxyPoolIds, proxyRotationStrategy: conn.providerSpecificData.proxyRotationStrategy, proxyPoolId: conn.providerSpecificData.proxyPoolIds[0] }
+          : proxyOptions;
 
-      try {
-        // Map clean ot/ id to provider's expected id
-        let providerModel = cleanModel;
-        // Freebuff expects upstream ids like openai/gpt-5.6-luna etc., but its normalize handles clean
-        // Opencode expects x-preview-f-free etc. as is
-        const result = await executor.execute({
-          model: providerModel,
-          body: { ...body, model: providerModel },
-          stream,
-          credentials: providerCreds,
-          signal,
-          log,
-          proxyOptions,
-          settings: ctx.settings,
-          providerConnections: ctx.providerConnections,
-        });
-        return result;
-      } catch (e) {
-        lastError = e;
-        log?.warn?.("OCTANE", `ot/${cleanModel} via ${providerId} failed: ${e.message} — trying next`);
-        // If it's a hard auth error, try next provider; if it's rate limit, also try next
-        continue;
+        try {
+          let providerModel = cleanModel;
+          const result = await executor.execute({
+            model: providerModel,
+            body: { ...body, model: providerModel },
+            stream,
+            credentials: providerCreds,
+            signal,
+            log,
+            proxyOptions: connProxyOptions,
+            settings: ctx.settings,
+            providerConnections: ctx.providerConnections,
+          });
+          return result;
+        } catch (e) {
+          lastError = e;
+          // Jika 401 dan fallback mati, langsung throw biar test murni kelihatan
+          if (e.status === 401 && !fallbackEnabled) throw e;
+          log?.warn?.("OCTANE", `ot/${cleanModel} via ${providerId} gh ${providerCreds?.name} failed: ${e.message} — trying next akun`);
+          continue;
+        }
       }
+      // Jika semua kandidat di provider ini gagal dan fallback mati, stop
+      if (!fallbackEnabled && lastError) throw lastError;
     }
     throw lastError || new Error(`Octane: no provider available for ot/${cleanModel}`);
   }
