@@ -28,8 +28,6 @@ export default {
     { id: "muse-spark-1.2(minimal)", name: "Muse Spark 1.2 (Minimal)", targetFormat: "openai-responses" },
     { id: "muse-spark-1.2", name: "Muse Spark 1.2 (Default)", targetFormat: "openai-responses" },
     { id: "muse-spark-1.2-contributor-free", name: "Muse Spark 1.2 Contributor Free", targetFormat: "openai-responses" },
-    { id: "x-preview-f-free", name: "Ox Alpha Free (Unlimited)" },
-    { id: "ox-alpha-free", name: "Ox Alpha Free (Unlimited)" },
     { id: "mimo-v2.5-free", name: "MiMo V2.5 Free" },
     { id: "nemotron-3.5-lightning-free", name: "Nemotron 3.5 Lightning Free" },
     { id: "nemotron-3-ultra-free", name: "Nemotron 3 Ultra Free" },
