@@ -105,7 +105,7 @@ function normalizeFreebuffModel(model) {
   const suffix = sufMatch ? sufMatch[0] : "";
   const base = suffix ? model.slice(0, sufMatch.index).trim() : model;
 
-  if (base === "muse-spark-1.2" || base === "meta/muse-spark-1.2" || base === "meta/muse-spark-1.2-contributor") return "muse-spark-1.2";
+  if (base === "muse-spark-1.2" || base === "meta/muse-spark-1.2" || base === "meta/muse-spark-1.2-contributor") return "meta/muse-spark-1.2-contributor";
   if (base === "ox/ox-alpha" || base === "ox-alpha" || base === "stealth/ox-alpha") return "stealth/ox-alpha";
   if (base === "gpt-5.6-luna" || base === "openai/gpt-5.6-luna") return "openai/gpt-5.6-luna";
   if (base === "kimi-k3" || base === "kimi-k3-eco" || base === "crof/kimi-k3" || base === "crof/kimi-k3-eco") return "crof/kimi-k3-eco";
@@ -136,6 +136,7 @@ const FREE_ROOT_AGENT_BY_MODEL = {
   "kimi-k3": "base3-free-kimi-k3-eco",
   "meta/muse-spark-1.2-contributor": "base3-free-muse-spark",
   "meta/muse-spark-1.2": "base3-free-muse-spark",
+  "muse-spark-1.2-contributor": "base3-free-muse-spark",
   "muse-spark-1.2": "base3-free-muse-spark",
   "z-ai/glm-5.2": "base3-free-glm",
   "anthropic/claude-fable-5": "base3-free-fable",

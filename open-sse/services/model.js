@@ -42,13 +42,14 @@ export function parseModel(modelStr) {
     const providerOrAlias = modelStr.slice(0, firstSlash);
     const model = modelStr.slice(firstSlash + 1);
 
-    // Route muse-spark under ot/ to opencode
-    if ((providerOrAlias === "ot" || providerOrAlias === "freebuff" || providerOrAlias === "octane" || providerOrAlias === "octaneai") && model.startsWith("muse-spark")) {
-      return { provider: "opencode", model, isAlias: false, providerAlias: "ot" };
+    // Keep unified Octane models under Octane. The Octane executor owns the
+    // per-model provider route; parsing must not bypass it for Muse/Kimi/etc.
+    if (providerOrAlias === "ot" || providerOrAlias === "octane" || providerOrAlias === "octaneai") {
+      return { provider: "octane", model, isAlias: false, providerAlias: providerOrAlias };
     }
 
-    // Route glm-, minimax-, and kimi- models under ot/ to codebuddy-intl (Gacor full flagship route)
-    if ((providerOrAlias === "ot" || providerOrAlias === "freebuff" || providerOrAlias === "octane" || providerOrAlias === "octaneai") && (model.startsWith("glm-") || model.startsWith("minimax-") || model.startsWith("kimi-"))) {
+    // Legacy freebuff aliases for glm/minimax remain pinned to CodeBuddy.
+    if (providerOrAlias === "freebuff" && (model.startsWith("glm-") || model.startsWith("minimax-"))) {
       return { provider: "codebuddy-intl", model, isAlias: false, providerAlias: "cbai" };
     }
 

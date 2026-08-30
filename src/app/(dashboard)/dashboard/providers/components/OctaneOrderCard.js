@@ -4,6 +4,12 @@ import { useState, useEffect } from "react";
 import { Card, Button, Badge, Toggle } from "@/shared/components";
 
 const DEFAULT_ORDER = ["freebuff", "opencode", "codebuddy-intl", "codebuddy-cn", "qoder"];
+const MODEL_ROUTES = [
+  { id: "gpt-5.6-luna", label: "GPT-5.6 Luna", providers: ["freebuff"] },
+  { id: "deepseek-v4-flash", label: "DeepSeek V4 Flash", providers: ["freebuff"] },
+  { id: "mimo-v2.5", label: "MiMo V2.5", providers: ["freebuff"] },
+  { id: "muse-spark-1.2", label: "Muse Spark 1.2", providers: ["opencode", "freebuff"] },
+];
 
 export default function OctaneOrderCard() {
   const [order, setOrder] = useState(DEFAULT_ORDER);
@@ -11,6 +17,7 @@ export default function OctaneOrderCard() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [modelRoutes, setModelRoutes] = useState({});
 
   useEffect(() => {
     fetch("/api/settings")
@@ -22,6 +29,7 @@ export default function OctaneOrderCard() {
         if (typeof data.octaneFallbackEnabled === "boolean") {
           setFallbackEnabled(data.octaneFallbackEnabled);
         }
+        setModelRoutes(data.octaneModelRoutes && typeof data.octaneModelRoutes === "object" ? data.octaneModelRoutes : {});
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -42,7 +50,7 @@ export default function OctaneOrderCard() {
       const res = await fetch("/api/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ octaneProviderOrder: order, octaneFallbackEnabled: fallbackEnabled }),
+         body: JSON.stringify({ octaneProviderOrder: order, octaneFallbackEnabled: fallbackEnabled, octaneModelRoutes: modelRoutes }),
       });
       if (res.ok) setHasChanges(false);
     } finally {
@@ -52,6 +60,7 @@ export default function OctaneOrderCard() {
 
   const reset = () => {
     setOrder(DEFAULT_ORDER);
+    setModelRoutes({});
     setHasChanges(true);
   };
 
@@ -69,33 +78,59 @@ export default function OctaneOrderCard() {
         </div>
         <Badge variant="default" size="sm">ot/</Badge>
       </div>
-      <div className="flex items-center justify-between rounded-lg border border-border bg-orange-50 dark:bg-orange-950/20 px-3 py-2 mb-3">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div>
-          <p className="text-sm font-medium">Fallback ke provider lain</p>
-          <p className="text-xs text-text-muted">Off = cegah 401, hanya coba freebuff dulu (test murni). On = kalau freebuff 401/429, coba opencode/codebuddy.</p>
-        </div>
-        <Toggle checked={fallbackEnabled} onChange={(v) => { setFallbackEnabled(v); setHasChanges(true); }} />
-      </div>
-
-      <div className="space-y-2">
-        {order.map((pid, idx) => (
-          <div key={pid} className="flex items-center justify-between rounded-lg border border-border bg-bg px-3 py-2">
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-mono text-text-muted w-6">#{idx + 1}</span>
-              <span className="text-sm font-medium">{pid}</span>
-              {pid === "freebuff" && <Badge variant="success" size="sm">fb</Badge>}
-              {pid === "opencode" && <Badge variant="default" size="sm">oc</Badge>}
+          <div className="flex items-center justify-between rounded-lg border border-border bg-orange-50 dark:bg-orange-950/20 px-3 py-2 mb-3">
+            <div>
+              <p className="text-sm font-medium">Fallback ke provider lain</p>
+              <p className="text-xs text-text-muted">Off = cegah 401, hanya coba freebuff dulu (test murni). On = kalau freebuff 401/429, coba opencode/codebuddy.</p>
             </div>
-            <div className="flex gap-1">
-              <button onClick={() => move(idx, "up")} disabled={idx === 0} className={`p-1 rounded ${idx === 0 ? "text-text-muted/30" : "hover:bg-black/5 text-text-muted"}`}>
-                <span className="material-symbols-outlined text-sm">keyboard_arrow_up</span>
-              </button>
-              <button onClick={() => move(idx, "down")} disabled={idx === order.length - 1} className={`p-1 rounded ${idx === order.length - 1 ? "text-text-muted/30" : "hover:bg-black/5 text-text-muted"}`}>
-                <span className="material-symbols-outlined text-sm">keyboard_arrow_down</span>
-              </button>
-            </div>
+            <Toggle checked={fallbackEnabled} onChange={(v) => { setFallbackEnabled(v); setHasChanges(true); }} />
           </div>
-        ))}
+
+          <div className="space-y-2">
+            {order.map((pid, idx) => (
+              <div key={pid} className="flex items-center justify-between rounded-lg border border-border bg-bg px-3 py-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-mono text-text-muted w-6">#{idx + 1}</span>
+                  <span className="text-sm font-medium">{pid}</span>
+                  {pid === "freebuff" && <Badge variant="success" size="sm">fb</Badge>}
+                  {pid === "opencode" && <Badge variant="default" size="sm">oc</Badge>}
+                </div>
+                <div className="flex gap-1">
+                  <button onClick={() => move(idx, "up")} disabled={idx === 0} className={`p-1 rounded ${idx === 0 ? "text-text-muted/30" : "hover:bg-black/5 text-text-muted"}`}>
+                    <span className="material-symbols-outlined text-sm">keyboard_arrow_up</span>
+                  </button>
+                  <button onClick={() => move(idx, "down")} disabled={idx === order.length - 1} className={`p-1 rounded ${idx === order.length - 1 ? "text-text-muted/30" : "hover:bg-black/5 text-text-muted"}`}>
+                    <span className="material-symbols-outlined text-sm">keyboard_arrow_down</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+        <p className="text-sm font-medium mb-2">Model routing</p>
+        <p className="text-xs text-text-muted mb-2">Atur provider utama per model. Urutan di atas dipakai sebagai fallback sesuai pilihan model.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {MODEL_ROUTES.map((route) => {
+            const selected = modelRoutes[route.id] || route.providers[0];
+            return (
+              <div key={route.id} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-bg px-3 py-2">
+                <code className="text-xs">ot/{route.id}</code>
+                <select
+                  value={selected}
+                  onChange={(e) => { setModelRoutes((prev) => ({ ...prev, [route.id]: e.target.value })); setHasChanges(true); }}
+                  className="rounded border border-border bg-bg px-2 py-1 text-xs"
+                >
+                  {route.providers.map((provider) => <option key={provider} value={provider}>{provider}</option>)}
+                </select>
+              </div>
+            );
+          })}
+        </div>
+      </div>
       </div>
 
       <div className="flex gap-2 mt-3">
