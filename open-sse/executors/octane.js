@@ -13,10 +13,11 @@ import { DefaultExecutor } from "./default.js";
  */
 
 // REAL FREEBUFF — tanpa CodeBuddy, semua ot/ murni freebuff/opencode
+// thinking suffix (high/xhigh/max) di-strip via baseClean, jadi 1 entry cover semua level max
 const MODEL_PROVIDER_MAP = {
   "gpt-5.6-luna": ["freebuff"],
   "kimi-k3": ["freebuff"],
-  "muse-spark-1.2": ["freebuff"],
+  "muse-spark-1.2": ["freebuff", "opencode"],
   "deepseek-v4-flash": ["freebuff"],
   "mimo-v2.5": ["freebuff"],
   "muse-spark-1.2-contributor-free": ["opencode"],
