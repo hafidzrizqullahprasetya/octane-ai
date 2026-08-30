@@ -3,6 +3,10 @@ import { PROVIDERS } from "../config/providers.js";
 import { FreebuffExecutor } from "./freebuff.js";
 import { OpenCodeExecutor } from "./opencode.js";
 import { DefaultExecutor } from "./default.js";
+import { resolveConnectionProxyConfig } from "../../src/lib/network/connectionProxy.js";
+import { getSettings } from "../../src/lib/db/repos/settingsRepo.js";
+import { getProxyPools } from "../../src/lib/db/repos/proxyPoolsRepo.js";
+import { pickProxyPoolId } from "../../src/lib/network/connectionProxy.js";
 
 /**
  * Octane AI — unified ot/ provider
@@ -16,8 +20,7 @@ import { DefaultExecutor } from "./default.js";
 // thinking suffix (high/xhigh/max) di-strip via baseClean, jadi 1 entry cover semua level max
 const MODEL_PROVIDER_MAP = {
   "gpt-5.6-luna": ["freebuff"],
-  "kimi-k3": ["freebuff"],
-  "muse-spark-1.2": ["freebuff", "opencode"],
+  "muse-spark-1.2": ["opencode"],
   "deepseek-v4-flash": ["freebuff"],
   "mimo-v2.5": ["freebuff"],
   "muse-spark-1.2-contributor-free": ["opencode"],
@@ -27,6 +30,16 @@ const MODEL_PROVIDER_MAP = {
   "laguna-s-2.1-free": ["opencode"],
   "hy3-free": ["opencode"],
   "big-pickle": ["opencode"],
+};
+
+const FREEBUFF_UPSTREAM_MODEL_MAP = {
+  "kimi-k3": "crof/kimi-k3-eco",
+  "muse-spark-1.2": "meta/muse-spark-1.2-contributor",
+  "mimo-v2.5": "mimo/mimo-v2.5",
+};
+
+const FREEBUFF_AGENT_MODEL_MAP = {
+  "crof/kimi-k3-eco": "base3-free-kimi-k3-eco",
 };
 
 function getOctaneOrder(settings) {
@@ -63,10 +76,15 @@ export class OctaneExecutor extends BaseExecutor {
     const { model, body, stream, credentials, signal, log, proxyOptions } = ctx;
     // Strip ot/ prefix if present for internal lookup
     const cleanModel = model.replace(/^ot\//, "").replace(/^octane\//, "");
-    const providersForModel = MODEL_PROVIDER_MAP[cleanModel] || MODEL_PROVIDER_MAP[cleanModel.split("(")[0].trim()] || ["freebuff", "opencode"];
+  const providersForModel = MODEL_PROVIDER_MAP[cleanModel] || MODEL_PROVIDER_MAP[cleanModel.split("(")[0].trim()] || ["freebuff", "opencode"];
+    const modelKey = cleanModel.split("(")[0].trim();
     
     // Try to get order from global settings if available (attached to ctx or global)
     let order = providersForModel;
+    const configuredModelProvider = ctx.settings?.octaneModelRoutes?.[modelKey];
+    if (configuredModelProvider && providersForModel.includes(configuredModelProvider)) {
+      order = [configuredModelProvider, ...providersForModel.filter((provider) => provider !== configuredModelProvider)];
+    }
     try {
       // ctx.settings may be injected by chatCore
       const settingsOrder = ctx.settings?.octaneProviderOrder;
@@ -78,12 +96,7 @@ export class OctaneExecutor extends BaseExecutor {
       }
     } catch {}
 
-    const executorMap = {
-      freebuff: new FreebuffExecutor(),
-      opencode: new OpenCodeExecutor(),
-      "codebuddy-intl": new DefaultExecutor("codebuddy-intl"),
-      "codebuddy-cn": new DefaultExecutor("codebuddy-cn"),
-    };
+    const executorMap = getDelegatedExecutors();
     const fallbackEnabled = isFallbackEnabled(ctx.settings);
     // Jika fallback mati, cuma coba provider pertama (freebuff) — biar test murni
     const tryOrder = fallbackEnabled ? order : [order[0]];
@@ -103,12 +116,22 @@ export class OctaneExecutor extends BaseExecutor {
       }
     }
     for (const providerId of tryOrder) {
-      const executor = executorMap[providerId] || new DefaultExecutor(providerId);
+      const executor = executorMap[providerId] || getDefaultExecutor(providerId);
       // Strict model per akun: cari semua koneksi provider itu yang assignedModel cocok dengan cleanModel
       // Biar test per model pakai akun yang memang di-assign untuk model itu, dan reuse sesi yang sama (tidak bikin sesi baru per test)
       let candidates = [];
       const sourceConns = allConnections || ctx.providerConnections || [];
-      if (sourceConns.length) {
+      if (executor.noAuth) {
+        candidates = [{
+          id: "noauth",
+          provider: providerId,
+          name: "Public",
+          isActive: true,
+          accessToken: "public",
+          providerSpecificData: proxyOptions || {},
+        }];
+      }
+      if (sourceConns.length && !executor.noAuth) {
         candidates = sourceConns
           .filter(c => c.provider === providerId && c.testStatus === "active")
           .filter(c => {
@@ -128,7 +151,7 @@ export class OctaneExecutor extends BaseExecutor {
           continue;
         }
         // Fallback: kalau tidak ada strict match tapi ada active, pakai yang pertama (untuk opencode yang tidak strict)
-        if (candidates.length === 0) {
+        if (candidates.length === 0 && !executor.noAuth) {
           const any = sourceConns.find(c => c.provider === providerId && c.testStatus === "active");
           if (any) candidates = [any];
         }
@@ -144,13 +167,64 @@ export class OctaneExecutor extends BaseExecutor {
           log?.warn?.("OCTANE", `Skip ${providerId} ot/${cleanModel} gh ${providerCreds?.name} — token 401, perlu re-login`);
           continue;
         }
-        // Pakai proxy khusus per akun (biar tidak semua numpuk 1 IP)
-        const connProxyOptions = conn.providerSpecificData?.proxyPoolIds?.length
-          ? { proxyPoolIds: conn.providerSpecificData.proxyPoolIds, proxyRotationStrategy: conn.providerSpecificData.proxyRotationStrategy, proxyPoolId: conn.providerSpecificData.proxyPoolIds[0] }
-          : proxyOptions;
+        // Resolve the same connection proxy as the direct provider path. This
+        // keeps ot/ and fb/ on the same egress and preserves model-scoped pool
+        // fitness for Freebuff.
+        let connProxyOptions = proxyOptions;
+        if (providerId === "freebuff") {
+          const proxyData = conn.providerSpecificData?.proxyPoolIds?.length
+            ? {
+                ...conn.providerSpecificData,
+                proxyPoolScope: `freebuff::${cleanModel}`,
+              }
+            : conn.providerSpecificData || {};
+          const resolved = await resolveConnectionProxyConfig(proxyData, conn.id);
+          if (resolved?.noFitPool) {
+            log?.warn?.("OCTANE", `No fit Freebuff proxy pool for ot/${cleanModel}`);
+          }
+          connProxyOptions = {
+            connectionProxyEnabled: resolved.connectionProxyEnabled,
+            connectionProxyUrl: resolved.connectionProxyUrl,
+            connectionNoProxy: resolved.connectionNoProxy,
+            connectionProxyPoolId: resolved.proxyPoolId || null,
+            proxyPoolId: resolved.proxyPoolId || null,
+            vercelRelayUrl: resolved.vercelRelayUrl || "",
+            strictProxy: resolved.strictProxy === true,
+          };
+        } else if (executor.noAuth) {
+          const settings = await getSettings();
+          const override = (settings.providerStrategies || {})[providerId] || {};
+          const strategy = override.rotateStrategy || "none";
+          let poolIds = [];
+          let pickedId = override.proxyPoolId || null;
+          if (strategy !== "none") {
+            const pools = await getProxyPools({ isActive: true });
+            poolIds = pools.filter((pool) => pool.proxyUrl).map((pool) => pool.id);
+            pickedId = pickProxyPoolId(poolIds, strategy, providerId, { scope: `${providerId}::${cleanModel}` });
+          } else if (pickedId) {
+            poolIds = [pickedId];
+          }
+          const resolved = await resolveConnectionProxyConfig({ proxyPoolId: pickedId || "" });
+          connProxyOptions = {
+            connectionProxyEnabled: resolved.connectionProxyEnabled,
+            connectionProxyUrl: resolved.connectionProxyUrl,
+            connectionNoProxy: resolved.connectionNoProxy,
+            connectionProxyPoolId: resolved.proxyPoolId || null,
+            proxyPoolId: resolved.proxyPoolId || null,
+            vercelRelayUrl: resolved.vercelRelayUrl || "",
+            strictProxy: resolved.strictProxy === true,
+            proxyPoolIds: poolIds,
+            proxyRotationStrategy: strategy,
+          };
+        }
 
         try {
-          let providerModel = cleanModel;
+            let providerModel = providerId === "freebuff"
+              ? (FREEBUFF_UPSTREAM_MODEL_MAP[cleanModel.split("(")[0].trim()] || cleanModel)
+              : cleanModel;
+            if (providerId === "freebuff") {
+              log?.debug?.("OCTANE", `Freebuff route ot/${cleanModel} -> model=${providerModel} agent=${FREEBUFF_AGENT_MODEL_MAP[providerModel] || "default"} account=${providerCreds?.name || providerCreds?.email || "?"}`);
+            }
           const result = await executor.execute({
             model: providerModel,
             body: { ...body, model: providerModel },
@@ -176,6 +250,25 @@ export class OctaneExecutor extends BaseExecutor {
     }
     throw lastError || new Error(`Octane: no provider available for ot/${cleanModel}`);
   }
+}
+
+const delegatedExecutors = new Map();
+function getDefaultExecutor(providerId) {
+  if (!delegatedExecutors.has(providerId)) delegatedExecutors.set(providerId, new DefaultExecutor(providerId));
+  return delegatedExecutors.get(providerId);
+}
+
+function getDelegatedExecutors() {
+  return {
+    freebuff: getDefaultExecutor("freebuff") instanceof FreebuffExecutor
+      ? getDefaultExecutor("freebuff")
+      : delegatedExecutors.set("freebuff", new FreebuffExecutor()).get("freebuff"),
+    opencode: delegatedExecutors.has("opencode")
+      ? delegatedExecutors.get("opencode")
+      : delegatedExecutors.set("opencode", new OpenCodeExecutor()).get("opencode"),
+    "codebuddy-intl": getDefaultExecutor("codebuddy-intl"),
+    "codebuddy-cn": getDefaultExecutor("codebuddy-cn"),
+  };
 }
 
 export default OctaneExecutor;
