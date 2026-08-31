@@ -127,7 +127,9 @@ export const MODEL_CAPABILITIES = {
   "kimi-k2.7-code":    { vision: true, videoInput: true, reasoning: true, thinkingFormat: "kimi", thinkingCanDisable: false, contextWindow: 262144, maxOutput: 65536 },
   "kimi-k2.7-code-highspeed": { vision: true, videoInput: true, reasoning: true, thinkingFormat: "kimi", thinkingCanDisable: false, contextWindow: 262144, maxOutput: 65536 },
   // OpenCode Free Muse Spark — OpenAI Responses reasoning supports up to xhigh.
-  "muse-spark-1.2-contributor-free": { reasoning: true, thinkingFormat: "openai", contextWindow: 1048576, maxOutput: 131072 },
+  // Vision-capable per models.dev (image/pdf/audio/video input).
+  "muse-spark-1.2": { vision: true, audioInput: true, videoInput: true, pdf: true, reasoning: true, thinkingFormat: "openai", contextWindow: 1048576, maxOutput: 131072 },
+  "muse-spark-1.2-contributor-free": { vision: true, audioInput: true, videoInput: true, pdf: true, reasoning: true, thinkingFormat: "openai", contextWindow: 1048576, maxOutput: 131072 },
 };
 
 const KIRO_GPT_5_6_CAPABILITIES = { vision: true, reasoning: true, search: true, thinkingFormat: "openai", contextWindow: 272000, maxOutput: 128000 };
@@ -157,10 +159,10 @@ export const PROVIDER_CAPABILITIES = {
     "gpt-5.6-luna-es": { vision: true, reasoning: true, thinkingFormat: "openai", contextWindow: 1000000, maxOutput: 128000 },
     "crof/kimi-k3-eco": { vision: true, reasoning: true, thinkingFormat: "openai" },
     "kimi-k3-eco": { vision: true, reasoning: true, thinkingFormat: "openai" },
-    "meta/muse-spark-1.2-contributor": { vision: false, reasoning: true, thinkingFormat: "openai" },
-    "muse-spark-1.2-contributor": { vision: false, reasoning: true, thinkingFormat: "openai" },
-    "meta/muse-spark-1.2": { vision: false, reasoning: true, thinkingFormat: "openai" },
-    "muse-spark-1.2": { vision: false, reasoning: true, thinkingFormat: "openai" },
+    "meta/muse-spark-1.2-contributor": { vision: true, reasoning: true, thinkingFormat: "openai" },
+    "muse-spark-1.2-contributor": { vision: true, reasoning: true, thinkingFormat: "openai" },
+    "meta/muse-spark-1.2": { vision: true, reasoning: true, thinkingFormat: "openai" },
+    "muse-spark-1.2": { vision: true, reasoning: true, thinkingFormat: "openai" },
     "deepseek/deepseek-v4-flash": { vision: false, reasoning: true, thinkingFormat: "openai" },
     "deepseek-v4-flash": { vision: false, reasoning: true, thinkingFormat: "openai" },
     "deepseek/deepseek-v4-pro": { vision: false, reasoning: true, thinkingFormat: "openai" },
@@ -185,10 +187,10 @@ export const PROVIDER_CAPABILITIES = {
     "gpt-5.6-luna-es": { vision: true, reasoning: true, thinkingFormat: "openai", contextWindow: 1000000, maxOutput: 128000 },
     "crof/kimi-k3-eco": { vision: true, reasoning: true, thinkingFormat: "openai" },
     "kimi-k3-eco": { vision: true, reasoning: true, thinkingFormat: "openai" },
-    "meta/muse-spark-1.2-contributor": { vision: false, reasoning: true, thinkingFormat: "openai" },
-    "muse-spark-1.2-contributor": { vision: false, reasoning: true, thinkingFormat: "openai" },
-    "meta/muse-spark-1.2": { vision: false, reasoning: true, thinkingFormat: "openai" },
-    "muse-spark-1.2": { vision: false, reasoning: true, thinkingFormat: "openai" },
+    "meta/muse-spark-1.2-contributor": { vision: true, reasoning: true, thinkingFormat: "openai" },
+    "muse-spark-1.2-contributor": { vision: true, reasoning: true, thinkingFormat: "openai" },
+    "meta/muse-spark-1.2": { vision: true, reasoning: true, thinkingFormat: "openai" },
+    "muse-spark-1.2": { vision: true, reasoning: true, thinkingFormat: "openai" },
     "deepseek/deepseek-v4-flash": { vision: false, reasoning: true, thinkingFormat: "openai" },
     "deepseek-v4-flash": { vision: false, reasoning: true, thinkingFormat: "openai" },
     "deepseek/deepseek-v4-pro": { vision: false, reasoning: true, thinkingFormat: "openai" },
@@ -212,8 +214,8 @@ export const PROVIDER_CAPABILITIES = {
     "crof/kimi-k3-eco": { vision: true, reasoning: true, thinkingFormat: "openai", contextWindow: 1048576, maxOutput: 131072 },
     "kimi-k3-eco": { vision: true, reasoning: true, thinkingFormat: "openai", contextWindow: 1048576, maxOutput: 131072 },
     "kimi-k3": { vision: true, reasoning: true, thinkingFormat: "openai", contextWindow: 1048576, maxOutput: 131072 },
-    "meta/muse-spark-1.2": { vision: false, reasoning: true, thinkingFormat: "openai", contextWindow: 1000000, maxOutput: 131072 },
-    "muse-spark-1.2": { vision: false, reasoning: true, thinkingFormat: "openai", contextWindow: 1000000, maxOutput: 131072 },
+    "meta/muse-spark-1.2": { vision: true, reasoning: true, thinkingFormat: "openai", contextWindow: 1000000, maxOutput: 131072 },
+    "muse-spark-1.2": { vision: true, reasoning: true, thinkingFormat: "openai", contextWindow: 1000000, maxOutput: 131072 },
     "deepseek/deepseek-v4-flash": { vision: true, reasoning: true, thinkingFormat: "openai", contextWindow: 1000000, maxOutput: 131072 },
     "deepseek-v4-flash": { vision: true, reasoning: true, thinkingFormat: "openai", contextWindow: 1000000, maxOutput: 131072 },
     "mimo/mimo-v2.5": { vision: true, reasoning: true, thinkingFormat: "openai", contextWindow: 1048576, maxOutput: 131072 },
@@ -395,6 +397,9 @@ export const PATTERN_CAPABILITIES = [
   { pattern: "*mimo*v2.5*",     caps: { vision: true, audioInput: true, videoInput: true, contextWindow: 1048576, maxOutput: 131072 } },
   { pattern: "*mimo*omni*",     caps: { vision: true, audioInput: true, contextWindow: 262144, maxOutput: 131072 } },
   { pattern: "*mimo*",          caps: { vision: true, contextWindow: 262144, maxOutput: 131072 } },
+
+  // ── Meta Muse Spark (vision + all input modalities per models.dev) ─
+  { pattern: "*muse-spark*",    caps: { vision: true, audioInput: true, videoInput: true, pdf: true, reasoning: true, thinkingFormat: "openai", contextWindow: 1000000, maxOutput: 131072 } },
 
   // ── Llama (4 = vision/1M; 3.x = text-only/128K) ──────────────────
   { pattern: "*llama-4*",       caps: { vision: true, contextWindow: 1000000 } },
