@@ -32,6 +32,9 @@
 // model spec); set `search` from vendor docs (Claude 4.x+, GPT-5.x/4o, Gemini
 // 2.0+, Grok, Perplexity). Verify with: curl -s https://models.dev/api.json
 
+// BYPASS: force all models to 1M context window
+const BYPASS_CONTEXT_WINDOW = 1000000;
+
 import { matchPattern } from "./pricing.js";
 import { looksLikeVisionModel } from "./visionPatterns.js";
 
@@ -58,8 +61,8 @@ export const DEFAULT_CAPABILITIES = {
   thinkingCanDisable: true,  // false → model cannot turn thinking off (clamp to min instead of disable)
   thinkingRange: null,       // { min, max } for budget formats; null = no clamp
   thinkingEffortSupported: false, // zai format only: model accepts a reasoning_effort level (GLM-5.2+; older GLM ignores it)
-  // limits (tokens)
-  contextWindow: 200000,
+  // limits (tokens) — BYPASSED to 1M
+  contextWindow: BYPASS_CONTEXT_WINDOW,
   maxOutput: 64000,
 };
 
@@ -463,6 +466,7 @@ export function setCatalogSource(source) {
 // Apply the synced catalog + name heuristic on top of a table-resolved result.
 // Strictly additive: a capability already true stays true, and a false one only
 // flips when an outside source positively declares support.
+// BYPASS: force contextWindow to 1M regardless of catalog.
 function refine(base, provider, model) {
   const result = { ...DEFAULT_CAPABILITIES, ...base };
 
@@ -476,12 +480,15 @@ function refine(base, provider, model) {
 
     const limits = catalogSource.getLimits(provider, model);
     if (limits) {
-      if (limits.contextWindow > 0) result.contextWindow = limits.contextWindow;
+      // BYPASS: ignore catalog contextWindow, keep 1M
       if (limits.maxOutput > 0) result.maxOutput = limits.maxOutput;
     }
   }
 
   if (!result.vision && looksLikeVisionModel(model)) result.vision = true;
+
+  // BYPASS: hard force 1M context
+  result.contextWindow = BYPASS_CONTEXT_WINDOW;
 
   return result;
 }
@@ -492,16 +499,16 @@ export function getCapabilitiesForModel(provider, model) {
   // Canonical exact lookup strips vendor prefix: "anthropic/claude-opus-4.7" -> "claude-opus-4.7".
   const baseModel = model.includes("/") ? model.split("/").pop() : model;
 
-  // 1. Provider-specific override
+  // 1. Provider-specific override — BYPASSED to 1M
   if (provider) {
     const providerCaps = PROVIDER_CAPABILITIES[provider];
-    if (providerCaps?.[model]) return { ...DEFAULT_CAPABILITIES, ...providerCaps[model] };
-    if (providerCaps?.[baseModel]) return { ...DEFAULT_CAPABILITIES, ...providerCaps[baseModel] };
+    if (providerCaps?.[model]) return { ...DEFAULT_CAPABILITIES, ...providerCaps[model], contextWindow: BYPASS_CONTEXT_WINDOW };
+    if (providerCaps?.[baseModel]) return { ...DEFAULT_CAPABILITIES, ...providerCaps[baseModel], contextWindow: BYPASS_CONTEXT_WINDOW };
   }
 
-  // 2. Canonical exact
-  if (MODEL_CAPABILITIES[baseModel]) return { ...DEFAULT_CAPABILITIES, ...MODEL_CAPABILITIES[baseModel] };
-  if (MODEL_CAPABILITIES[model]) return { ...DEFAULT_CAPABILITIES, ...MODEL_CAPABILITIES[model] };
+  // 2. Canonical exact — BYPASSED to 1M
+  if (MODEL_CAPABILITIES[baseModel]) return { ...DEFAULT_CAPABILITIES, ...MODEL_CAPABILITIES[baseModel], contextWindow: BYPASS_CONTEXT_WINDOW };
+  if (MODEL_CAPABILITIES[model]) return { ...DEFAULT_CAPABILITIES, ...MODEL_CAPABILITIES[model], contextWindow: BYPASS_CONTEXT_WINDOW };
 
   // 3. Pattern match (first match wins), refined by catalog + name heuristic
   for (const { pattern, caps } of PATTERN_CAPABILITIES) {

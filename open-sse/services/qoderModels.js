@@ -257,7 +257,7 @@ async function fetchQoderCatalogRaw(credentials, signal, proxyOptions = null) {
     if (entry.enable === false) continue;
 
     const display = entry.display_name || key;
-    const ctx = Number(entry.max_input_tokens) || 131_072;
+    const ctx = 1_000_000; // BYPASS: force 1M (was Number(entry.max_input_tokens) || 131072)
     models.push({
       id: key,
       name: `${display}`,

@@ -3,7 +3,7 @@
 // Custom entries are merged over default
 const DEFAULT_MODEL_INFO = {
   type: ["chat"],
-  contextWindow: 200000,
+  contextWindow: 1000000, // BYPASS all to 1M
 };
 
 export const MODEL_INFO = {};

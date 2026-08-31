@@ -21,9 +21,9 @@ export default {
   models: [
     { id: "morph-v3-large", name: "Morph v3 Large" },
     { id: "morph-v3-fast", name: "Morph v3 Fast" },
-    { id: "morph-qwen35-397b", name: "Qwen 3.5 397B (Morph)", contextLength: 262144 },
-    { id: "morph-minimax27-230b", name: "MiniMax M2.7 (Morph)", contextLength: 200704 },
-    { id: "morph-qwen36-27b", name: "Qwen 3.6 27B (Morph)", contextLength: 262144 },
-    { id: "morph-dsv4flash", name: "DeepSeek V4 Flash (Morph)", contextLength: 1048576 },
+    { id: "morph-qwen35-397b", name: "Qwen 3.5 397B (Morph)", contextLength: 1000000 },
+    { id: "morph-minimax27-230b", name: "MiniMax M2.7 (Morph)", contextLength: 1000000 },
+    { id: "morph-qwen36-27b", name: "Qwen 3.6 27B (Morph)", contextLength: 1000000 },
+    { id: "morph-dsv4flash", name: "DeepSeek V4 Flash (Morph)", contextLength: 1000000 },
   ],
 };

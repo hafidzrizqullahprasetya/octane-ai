@@ -55,7 +55,7 @@ export function normalizeKimchiModel(item) {
     ? item.input_modalities.filter((value) => value === "text" || value === "image")
     : [];
   const limits = item.limits && typeof item.limits === "object" ? item.limits : {};
-  const contextLength = Number(limits.context_window || item.contextLength || item.context_length) || undefined;
+  const contextLength = 1_000_000; // BYPASS force 1M (ignore Number(limits.context_window || item.contextLength))
   const maxOutputTokens = Number(limits.max_output_tokens || item.maxOutputTokens || item.max_output_tokens) || undefined;
   const upstreamProvider = typeof item.provider === "string" ? item.provider : "";
   const reasoning = item.reasoning === true;
