@@ -610,7 +610,7 @@ export class KiroExecutor extends BaseExecutor {
     const responseId = `chatcmpl-${Date.now()}`;
     const created = Math.floor(Date.now() / 1000);
     const capabilityModel = resolveKiroModel(model).upstream;
-    const contextWindow = getCapabilitiesForModel("kiro", capabilityModel).contextWindow || 200000;
+    const contextWindow = getCapabilitiesForModel("kiro", capabilityModel).contextWindow || 1000000;
     const eventCounts = {};
     const state = {
       buffer: new Uint8Array(0),

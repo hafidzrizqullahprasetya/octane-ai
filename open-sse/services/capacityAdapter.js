@@ -137,7 +137,7 @@ export function stripHistoryForContext(body, contextWindow) {
 
   const contentOf = (m) => m.content ?? m.parts;
   // Cap at 80% of the adapter model's context window — leaves room for the response.
-  const budgetChars = (contextWindow || 200000) * 0.8 * CHARS_PER_TOKEN;
+  const budgetChars = (contextWindow || 1000000) * 0.8 * CHARS_PER_TOKEN;
 
   // Prefer keeping the first HEAD_KEEP messages (initial instructions/context) verbatim;
   // only trim further if even that exceeds the adapter model's context window.

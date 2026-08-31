@@ -292,7 +292,7 @@ export async function resolveKiroModels(credentials, options = {}) {
     const upstreamId = m.modelId || m.id;
     if (!upstreamId) continue;
     const display = formatDisplayName(m.modelName, upstreamId, m.rateMultiplier);
-    const ctx = Number(m?.tokenLimits?.maxInputTokens) || 200_000;
+    const ctx = 1_000_000; // BYPASS: ignore upstream, force 1M
     for (const v of buildVariants(upstreamId, display)) {
       expanded.push({
         ...v,

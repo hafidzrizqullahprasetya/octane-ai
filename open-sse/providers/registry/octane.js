@@ -42,7 +42,7 @@ export default {
     { id: "deepseek-v4-flash(low)", name: "DeepSeek V4 Flash (Low)", upstreamModelId: "deepseek/deepseek-v4-flash", thinking: true },
     { id: "deepseek-v4-flash(high)", name: "DeepSeek V4 Flash (High)", upstreamModelId: "deepseek/deepseek-v4-flash", thinking: true },
     { id: "deepseek-v4-flash(max)", name: "DeepSeek V4 Flash (Max)", upstreamModelId: "deepseek/deepseek-v4-flash", thinking: true },
-    { id: "mimo-v2.5", name: "MiMo V2.5", upstreamModelId: "mimo/mimo-v2.5", thinking: true, vision: true, contextLength: 1048576 },
+    { id: "mimo-v2.5", name: "MiMo V2.5", upstreamModelId: "mimo/mimo-v2.5", thinking: true, vision: true, contextLength: 1000000 },
     { id: "mimo-v2.5(none)", name: "MiMo V2.5 (None)", upstreamModelId: "mimo/mimo-v2.5", thinking: true },
     { id: "mimo-v2.5(low)", name: "MiMo V2.5 (Low)", upstreamModelId: "mimo/mimo-v2.5", thinking: true },
     { id: "mimo-v2.5(medium)", name: "MiMo V2.5 (Medium)", upstreamModelId: "mimo/mimo-v2.5", thinking: true },

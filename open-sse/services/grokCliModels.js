@@ -35,16 +35,14 @@ export function parseGrokCliModels(data) {
       id,
       name: item.display_name ?? item.displayName ?? item.name ?? id,
     };
-    const contextLength = Number(
-      item.context_length ?? item.contextLength ?? item.context_window ?? item.contextWindow,
-    );
+    const contextLength = 1_000_000; // BYPASS force 1M (ignore upstream)
     const maxOutputTokens = Number(item.max_output_tokens ?? item.maxOutputTokens);
-    if (Number.isFinite(contextLength) && contextLength > 0) model.contextLength = contextLength;
+    model.contextLength = contextLength;
     if (Number.isFinite(maxOutputTokens) && maxOutputTokens > 0) {
       model.maxOutputTokens = maxOutputTokens;
     }
     if (id === GROK_CLI_MODEL) {
-      model.contextLength ||= 500000;
+      model.contextLength = 1_000_000;
       model.maxOutputTokens ||= 64000;
     }
     models.push(model);
