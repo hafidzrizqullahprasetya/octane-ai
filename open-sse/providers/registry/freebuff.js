@@ -92,6 +92,14 @@ export default {
     { id: "muse-spark-1.2(high)", name: "Muse Spark 1.2 (High)", upstreamModelId: "meta/muse-spark-1.2-contributor" },
     { id: "muse-spark-1.2(xhigh)", name: "Muse Spark 1.2 (XHigh)", upstreamModelId: "meta/muse-spark-1.2-contributor" },
     { id: "muse-spark-1.2", name: "Muse Spark 1.2 (Default)", upstreamModelId: "meta/muse-spark-1.2-contributor" },
+    // 🎨 Meta Muse Spark 1.3 (OpenCode Route) — new
+    { id: "muse-spark-1.3(minimal)", name: "Muse Spark 1.3 (Minimal)", upstreamModelId: "meta/muse-spark-1.3-contributor" },
+    { id: "muse-spark-1.3(low)", name: "Muse Spark 1.3 (Low)", upstreamModelId: "meta/muse-spark-1.3-contributor" },
+    { id: "muse-spark-1.3(medium)", name: "Muse Spark 1.3 (Medium)", upstreamModelId: "meta/muse-spark-1.3-contributor" },
+    { id: "muse-spark-1.3(high)", name: "Muse Spark 1.3 (High)", upstreamModelId: "meta/muse-spark-1.3-contributor" },
+    { id: "muse-spark-1.3(xhigh)", name: "Muse Spark 1.3 (XHigh)", upstreamModelId: "meta/muse-spark-1.3-contributor" },
+    { id: "muse-spark-1.3(max)", name: "Muse Spark 1.3 (Max)", upstreamModelId: "meta/muse-spark-1.3-contributor" },
+    { id: "muse-spark-1.3", name: "Muse Spark 1.3 (Default)", upstreamModelId: "meta/muse-spark-1.3-contributor" },
   ],
   // Login-flow host — the CLI in freebuff mode logs in via freebuff.com, and
   // the server builds loginUrl from the host it was called on, so the link the

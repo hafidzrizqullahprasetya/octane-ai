@@ -8,6 +8,9 @@ import { resolveSessionId } from "../utils/sessionManager.js";
 const OPENCODE_UA = "opencode";
 // Models served by /zen/v1/responses; every other model stays on /chat/completions.
 const RESPONSES_MODELS = new Set([
+  "muse-spark-1.3-contributor-free",
+  "muse-spark-1.3",
+  "muse-spark-1.3-contributor",
   "muse-spark-1.2-contributor-free",
   "muse-spark-1.2",
   "muse-spark",
@@ -80,7 +83,8 @@ const IP_LIMIT_BODY = /limit|rate|quota|exhausted|capacity|too many|retry/i;
 function resolveOpencodeModelId(model) {
   const stripped = stripThinkingSuffix(model) || model;
   if (stripped === "ox-alpha-free" || stripped === "x-preview-f-free" || stripped === "ox-alpha") return "x-preview-f-free";
-  if (stripped === "muse-spark" || stripped === "muse-spark-1.2" || stripped === "muse-spark-1.2-contributor-free" || stripped.startsWith("muse-spark")) return "muse-spark-1.2-contributor-free";
+  if (stripped === "muse-spark-1.3" || stripped === "muse-spark-1.3-contributor-free" || stripped === "muse-spark-1.3-contributor" || stripped.startsWith("muse-spark-1.3")) return "muse-spark-1.3-contributor-free";
+  if (stripped === "muse-spark" || stripped === "muse-spark-1.2" || stripped === "muse-spark-1.2-contributor-free" || stripped === "muse-spark-1.2-contributor" || stripped.startsWith("muse-spark-1.2") || stripped.startsWith("muse-spark")) return "muse-spark-1.2-contributor-free";
   if (stripped === "mimo-v2.5-free" || stripped === "mimo-v2.5") return "mimo-v2.5-free";
   if (stripped === "nemotron-3.5-lightning-free" || stripped === "nemotron-3.5-lightning") return "nemotron-3.5-lightning-free";
   if (stripped === "nemotron-3-ultra-free" || stripped === "nemotron-3-ultra") return "nemotron-3-ultra-free";

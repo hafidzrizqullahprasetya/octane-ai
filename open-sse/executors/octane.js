@@ -21,8 +21,10 @@ import { pickProxyPoolId } from "../../src/lib/network/connectionProxy.js";
 const MODEL_PROVIDER_MAP = {
   "gpt-5.6-luna": ["freebuff"],
   "muse-spark-1.2": ["opencode"],
+  "muse-spark-1.3": ["opencode"],
   "deepseek-v4-flash": ["freebuff"],
   "mimo-v2.5": ["freebuff"],
+  "muse-spark-1.3-contributor-free": ["opencode"],
   "muse-spark-1.2-contributor-free": ["opencode"],
   "ox-alpha-free": ["opencode"],
   "mimo-v2.5-free": ["opencode"],
