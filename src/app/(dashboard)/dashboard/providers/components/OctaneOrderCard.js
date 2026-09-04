@@ -8,7 +8,7 @@ const MODEL_ROUTES = [
   { id: "gpt-5.6-luna", label: "GPT-5.6 Luna", providers: ["freebuff"] },
   { id: "deepseek-v4-flash", label: "DeepSeek V4 Flash", providers: ["freebuff"] },
   { id: "mimo-v2.5", label: "MiMo V2.5", providers: ["freebuff"] },
-  { id: "muse-spark-1.2", label: "Muse Spark 1.2", providers: ["opencode", "freebuff"] },
+  { id: "muse-spark-1.3", label: "Muse Spark 1.3", providers: ["opencode", "freebuff"] },
 ];
 
 export default function OctaneOrderCard() {

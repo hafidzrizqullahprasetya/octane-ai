@@ -20,12 +20,10 @@ import { pickProxyPoolId } from "../../src/lib/network/connectionProxy.js";
 // thinking suffix (high/xhigh/max) di-strip via baseClean, jadi 1 entry cover semua level max
 const MODEL_PROVIDER_MAP = {
   "gpt-5.6-luna": ["freebuff"],
-  "muse-spark-1.2": ["opencode"],
   "muse-spark-1.3": ["opencode"],
   "deepseek-v4-flash": ["freebuff"],
   "mimo-v2.5": ["freebuff"],
   "muse-spark-1.3-contributor-free": ["opencode"],
-  "muse-spark-1.2-contributor-free": ["opencode"],
   "ox-alpha-free": ["opencode"],
   "mimo-v2.5-free": ["opencode"],
   "laguna-s-2.1-free": ["opencode"],
@@ -33,7 +31,6 @@ const MODEL_PROVIDER_MAP = {
 
 const FREEBUFF_UPSTREAM_MODEL_MAP = {
   "kimi-k3": "crof/kimi-k3-eco",
-  "muse-spark-1.2": "meta/muse-spark-1.2-contributor",
   "mimo-v2.5": "mimo/mimo-v2.5",
 };
 

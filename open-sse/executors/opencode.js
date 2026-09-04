@@ -11,8 +11,6 @@ const RESPONSES_MODELS = new Set([
   "muse-spark-1.3-contributor-free",
   "muse-spark-1.3",
   "muse-spark-1.3-contributor",
-  "muse-spark-1.2-contributor-free",
-  "muse-spark-1.2",
   "muse-spark",
 ]);
 
@@ -84,7 +82,7 @@ function resolveOpencodeModelId(model) {
   const stripped = stripThinkingSuffix(model) || model;
   if (stripped === "ox-alpha-free" || stripped === "x-preview-f-free" || stripped === "ox-alpha") return "x-preview-f-free";
   if (stripped === "muse-spark-1.3" || stripped === "muse-spark-1.3-contributor-free" || stripped === "muse-spark-1.3-contributor" || stripped.startsWith("muse-spark-1.3")) return "muse-spark-1.3-contributor-free";
-  if (stripped === "muse-spark" || stripped === "muse-spark-1.2" || stripped === "muse-spark-1.2-contributor-free" || stripped === "muse-spark-1.2-contributor" || stripped.startsWith("muse-spark-1.2") || stripped.startsWith("muse-spark")) return "muse-spark-1.2-contributor-free";
+  if (stripped === "muse-spark" || stripped.startsWith("muse-spark")) return "muse-spark-1.3-contributor-free";
   if (stripped === "mimo-v2.5-free" || stripped === "mimo-v2.5") return "mimo-v2.5-free";
   if (stripped === "laguna-s-2.1-free" || stripped === "laguna-s-2.1") return "laguna-s-2.1-free";
   return stripped;
