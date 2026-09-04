@@ -28,10 +28,7 @@ const MODEL_PROVIDER_MAP = {
   "muse-spark-1.2-contributor-free": ["opencode"],
   "ox-alpha-free": ["opencode"],
   "mimo-v2.5-free": ["opencode"],
-  "nemotron-3.5-lightning-free": ["opencode"],
   "laguna-s-2.1-free": ["opencode"],
-  "hy3-free": ["opencode"],
-  "big-pickle": ["opencode"],
 };
 
 const FREEBUFF_UPSTREAM_MODEL_MAP = {

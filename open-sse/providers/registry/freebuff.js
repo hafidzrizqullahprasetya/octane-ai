@@ -98,7 +98,6 @@ export default {
     { id: "muse-spark-1.3(medium)", name: "Muse Spark 1.3 (Medium)", upstreamModelId: "meta/muse-spark-1.3-contributor" },
     { id: "muse-spark-1.3(high)", name: "Muse Spark 1.3 (High)", upstreamModelId: "meta/muse-spark-1.3-contributor" },
     { id: "muse-spark-1.3(xhigh)", name: "Muse Spark 1.3 (XHigh)", upstreamModelId: "meta/muse-spark-1.3-contributor" },
-    { id: "muse-spark-1.3(max)", name: "Muse Spark 1.3 (Max)", upstreamModelId: "meta/muse-spark-1.3-contributor" },
     { id: "muse-spark-1.3", name: "Muse Spark 1.3 (Default)", upstreamModelId: "meta/muse-spark-1.3-contributor" },
   ],
   // Login-flow host — the CLI in freebuff mode logs in via freebuff.com, and

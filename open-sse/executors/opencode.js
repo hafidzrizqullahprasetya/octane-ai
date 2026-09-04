@@ -86,11 +86,7 @@ function resolveOpencodeModelId(model) {
   if (stripped === "muse-spark-1.3" || stripped === "muse-spark-1.3-contributor-free" || stripped === "muse-spark-1.3-contributor" || stripped.startsWith("muse-spark-1.3")) return "muse-spark-1.3-contributor-free";
   if (stripped === "muse-spark" || stripped === "muse-spark-1.2" || stripped === "muse-spark-1.2-contributor-free" || stripped === "muse-spark-1.2-contributor" || stripped.startsWith("muse-spark-1.2") || stripped.startsWith("muse-spark")) return "muse-spark-1.2-contributor-free";
   if (stripped === "mimo-v2.5-free" || stripped === "mimo-v2.5") return "mimo-v2.5-free";
-  if (stripped === "nemotron-3.5-lightning-free" || stripped === "nemotron-3.5-lightning") return "nemotron-3.5-lightning-free";
-  if (stripped === "nemotron-3-ultra-free" || stripped === "nemotron-3-ultra") return "nemotron-3-ultra-free";
   if (stripped === "laguna-s-2.1-free" || stripped === "laguna-s-2.1") return "laguna-s-2.1-free";
-  if (stripped === "hy3-free" || stripped === "hy3" || stripped === "hunyuan-3") return "hy3-free";
-  if (stripped === "big-pickle") return "big-pickle";
   return stripped;
 }
 
@@ -104,7 +100,9 @@ export class OpenCodeExecutor extends BaseExecutor {
     this._currentSessionId = resolveOpencodeSession(body, credentials);
     const resolvedModel = resolveOpencodeModelId(model);
     const suffixParsed = parseSuffix(model);
-    const effort = suffixParsed?.override?.level || body?.reasoning_effort || "xhigh";
+    let effort = suffixParsed?.override?.level || body?.reasoning_effort || "xhigh";
+    // Clamp unsupported 'max' for Muse Spark (model ladder is minimal/low/medium/high/xhigh, no max)
+    if (effort === "max" && /^muse-spark/.test(resolvedModel)) effort = "xhigh";
 
     if (RESPONSES_MODELS.has(resolvedModel) || isResponsesModel(model)) {
       if (body?.messages && Array.isArray(body.messages) && body.messages.length > 0) {
