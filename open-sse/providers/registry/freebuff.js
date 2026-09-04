@@ -85,13 +85,6 @@ export default {
     // 🌀 MiMo V2.5 (Unlimited Free)
     { id: "mimo-v2.5", name: "MiMo V2.5", upstreamModelId: "mimo/mimo-v2.5" },
 
-    // 🎨 Meta Muse Spark 1.2 (OpenCode Route)
-    { id: "muse-spark-1.2(minimal)", name: "Muse Spark 1.2 (Minimal)", upstreamModelId: "meta/muse-spark-1.2-contributor" },
-    { id: "muse-spark-1.2(low)", name: "Muse Spark 1.2 (Low)", upstreamModelId: "meta/muse-spark-1.2-contributor" },
-    { id: "muse-spark-1.2(medium)", name: "Muse Spark 1.2 (Medium)", upstreamModelId: "meta/muse-spark-1.2-contributor" },
-    { id: "muse-spark-1.2(high)", name: "Muse Spark 1.2 (High)", upstreamModelId: "meta/muse-spark-1.2-contributor" },
-    { id: "muse-spark-1.2(xhigh)", name: "Muse Spark 1.2 (XHigh)", upstreamModelId: "meta/muse-spark-1.2-contributor" },
-    { id: "muse-spark-1.2", name: "Muse Spark 1.2 (Default)", upstreamModelId: "meta/muse-spark-1.2-contributor" },
     // 🎨 Meta Muse Spark 1.3 (OpenCode Route) — new
     { id: "muse-spark-1.3(minimal)", name: "Muse Spark 1.3 (Minimal)", upstreamModelId: "meta/muse-spark-1.3-contributor" },
     { id: "muse-spark-1.3(low)", name: "Muse Spark 1.3 (Low)", upstreamModelId: "meta/muse-spark-1.3-contributor" },

@@ -35,8 +35,6 @@ export default {
     { id: "gpt-5.6-luna(high)", name: "GPT-5.6 Luna (High)", upstreamModelId: "openai/gpt-5.6-luna" },
     { id: "gpt-5.6-luna(xhigh)", name: "GPT-5.6 Luna (XHigh)", upstreamModelId: "openai/gpt-5.6-luna" },
     { id: "gpt-5.6-luna(max)", name: "GPT-5.6 Luna (Max)", upstreamModelId: "openai/gpt-5.6-luna" },
-    { id: "muse-spark-1.2", name: "Muse Spark 1.2", upstreamModelId: "muse-spark-1.2-contributor", contextLength: 1000000 },
-    { id: "muse-spark-1.2(xhigh)", name: "Muse Spark 1.2 (XHigh)", upstreamModelId: "muse-spark-1.2-contributor", contextLength: 1000000 },
     { id: "muse-spark-1.3", name: "Muse Spark 1.3", upstreamModelId: "muse-spark-1.3-contributor", contextLength: 1000000 },
     { id: "muse-spark-1.3(minimal)", name: "Muse Spark 1.3 (Minimal)", upstreamModelId: "muse-spark-1.3-contributor", contextLength: 1000000 },
     { id: "muse-spark-1.3(low)", name: "Muse Spark 1.3 (Low)", upstreamModelId: "muse-spark-1.3-contributor", contextLength: 1000000 },
@@ -56,7 +54,6 @@ export default {
     { id: "mimo-v2.5(max)", name: "MiMo V2.5 (Max)", upstreamModelId: "mimo/mimo-v2.5", thinking: true },
     // Opencode Free extras
     { id: "muse-spark-1.3-contributor-free", name: "Muse Spark 1.3 Contributor Free", upstreamModelId: "muse-spark-1.3-contributor-free" },
-    { id: "muse-spark-1.2-contributor-free", name: "Muse Spark 1.2 Contributor Free", upstreamModelId: "muse-spark-1.2-contributor-free" },
     { id: "ox-alpha-free", name: "Ox Alpha Free", upstreamModelId: "ox-alpha-free" },
     { id: "x-preview-f-free", name: "Ox Preview Free", upstreamModelId: "x-preview-f-free" },
     { id: "mimo-v2.5-free", name: "MiMo V2.5 Free", upstreamModelId: "mimo-v2.5-free" },

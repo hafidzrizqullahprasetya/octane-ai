@@ -28,15 +28,9 @@ export default {
     { id: "muse-spark-1.3(minimal)", name: "Muse Spark 1.3 (Minimal)", targetFormat: "openai-responses" },
     { id: "muse-spark-1.3", name: "Muse Spark 1.3 (Default)", targetFormat: "openai-responses" },
     { id: "muse-spark-1.3-contributor-free", name: "Muse Spark 1.3 Contributor Free", targetFormat: "openai-responses" },
-    { id: "muse-spark-1.2(xhigh)", name: "Muse Spark 1.2 (XHigh)", targetFormat: "openai-responses" },
-    { id: "muse-spark-1.2(high)", name: "Muse Spark 1.2 (High)", targetFormat: "openai-responses" },
-    { id: "muse-spark-1.2(medium)", name: "Muse Spark 1.2 (Medium)", targetFormat: "openai-responses" },
-    { id: "muse-spark-1.2(low)", name: "Muse Spark 1.2 (Low)", targetFormat: "openai-responses" },
-    { id: "muse-spark-1.2(minimal)", name: "Muse Spark 1.2 (Minimal)", targetFormat: "openai-responses" },
-    { id: "muse-spark-1.2", name: "Muse Spark 1.2 (Default)", targetFormat: "openai-responses" },
-    { id: "muse-spark-1.2-contributor-free", name: "Muse Spark 1.2 Contributor Free", targetFormat: "openai-responses" },
+
     { id: "mimo-v2.5-free", name: "MiMo V2.5 Free" },
-    { id: "laguna-s-2.1-free", name: "Laguna S 2.1 Free" },
+    { id: "laguna-s-2.1-free", name: "Laguna S 2.1 Free" }
   ],
   modelsFetcher: { url: "https://opencode.ai/zen/v1/models", type: "opencode-free" },
   passthroughModels: true,

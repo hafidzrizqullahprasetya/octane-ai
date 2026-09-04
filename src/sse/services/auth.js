@@ -29,8 +29,8 @@ function normalizeModelForFilter(name) {
   if (stripped === "deepseek-v4-flash" || stripped === "deepseek/deepseek-v4-flash") {
     return "deepseek/deepseek-v4-flash";
   }
-  if (stripped === "muse-spark-1.2" || stripped === "meta/muse-spark-1.2" || stripped === "meta/muse-spark-1.2-contributor") {
-    return "meta/muse-spark-1.2";
+  if (stripped === "muse-spark-1.3" || stripped === "meta/muse-spark-1.3" || stripped === "meta/muse-spark-1.3-contributor") {
+    return "meta/muse-spark-1.3";
   }
   return stripped;
 }
