@@ -43,7 +43,6 @@ export default {
     { id: "muse-spark-1.3(medium)", name: "Muse Spark 1.3 (Medium)", upstreamModelId: "muse-spark-1.3-contributor", contextLength: 1000000 },
     { id: "muse-spark-1.3(high)", name: "Muse Spark 1.3 (High)", upstreamModelId: "muse-spark-1.3-contributor", contextLength: 1000000 },
     { id: "muse-spark-1.3(xhigh)", name: "Muse Spark 1.3 (XHigh)", upstreamModelId: "muse-spark-1.3-contributor", contextLength: 1000000 },
-    { id: "muse-spark-1.3(max)", name: "Muse Spark 1.3 (Max)", upstreamModelId: "muse-spark-1.3-contributor", contextLength: 1000000 },
     { id: "deepseek-v4-flash", name: "DeepSeek V4 Flash", upstreamModelId: "deepseek/deepseek-v4-flash", thinking: true, vision: true, contextLength: 1000000 },
     { id: "deepseek-v4-flash(none)", name: "DeepSeek V4 Flash (None)", upstreamModelId: "deepseek/deepseek-v4-flash", thinking: true },
     { id: "deepseek-v4-flash(low)", name: "DeepSeek V4 Flash (Low)", upstreamModelId: "deepseek/deepseek-v4-flash", thinking: true },
@@ -61,10 +60,6 @@ export default {
     { id: "ox-alpha-free", name: "Ox Alpha Free", upstreamModelId: "ox-alpha-free" },
     { id: "x-preview-f-free", name: "Ox Preview Free", upstreamModelId: "x-preview-f-free" },
     { id: "mimo-v2.5-free", name: "MiMo V2.5 Free", upstreamModelId: "mimo-v2.5-free" },
-    { id: "nemotron-3.5-lightning-free", name: "Nemotron 3.5 Lightning Free", upstreamModelId: "nemotron-3.5-lightning-free" },
-    { id: "nemotron-3-ultra-free", name: "Nemotron 3 Ultra Free", upstreamModelId: "nemotron-3-ultra-free" },
     { id: "laguna-s-2.1-free", name: "Laguna S 2.1 Free", upstreamModelId: "laguna-s-2.1-free" },
-    { id: "hy3-free", name: "Hunyuan 3 Free", upstreamModelId: "hy3-free" },
-    { id: "big-pickle", name: "Big Pickle Free", upstreamModelId: "big-pickle" },
   ],
 };
