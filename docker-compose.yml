@@ -4,8 +4,12 @@ services:
     image: ghcr.io/hafidzrizqullahprasetya/octane-ai:latest
     container_name: octane-ai
     restart: always
+    mem_limit: 512m
+    memswap_limit: 512m
+    labels:
+      - "com.centurylinklabs.watchtower.scope=octane"
     ports:
-      - "20128:20128"
+      - "127.0.0.1:20128:20128"
     volumes:
       - ./data:/app/data
     env_file:
@@ -23,13 +27,21 @@ services:
     image: ghcr.io/chopratejas/headroom:latest
     container_name: headroom
     restart: always
+    mem_limit: 256m
+    memswap_limit: 256m
+    labels:
+      - "com.centurylinklabs.watchtower.scope=octane"
     ports:
-      - "8787:8787"
+      - "127.0.0.1:8787:8787"
 
   watchtower:
     image: containrrr/watchtower:latest
     container_name: watchtower
     restart: always
+    mem_limit: 128m
+    memswap_limit: 128m
+    labels:
+      - "com.centurylinklabs.watchtower.scope=octane"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /home/hafidzprasetya/.docker/config.json:/config.json:ro
@@ -37,4 +49,5 @@ services:
       - DOCKER_API_VERSION=1.44
       - WATCHTOWER_CLEANUP=true
       - WATCHTOWER_POLL_INTERVAL=30
+      - WATCHTOWER_SCOPE=octane
       - WATCHTOWER_INCLUDE_STOPPED=false
