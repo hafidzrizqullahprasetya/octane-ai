@@ -94,4 +94,4 @@ __pycache__/
 *.png
 *.html
 *.har
-.venv/
+.venv/.worktrees/
