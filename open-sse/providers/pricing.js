@@ -145,6 +145,13 @@ export const MODEL_PRICING = {
  * Keyed by provider alias (cc, cx, gc, gh, ...) or provider id (openai, anthropic, ...).
  */
 export const PROVIDER_PRICING = {
+  // Experiential Labs — free ($0) tier for these models, verified via live smoke test 2026-09-05
+  experientiallabs: {
+    "gpt-6-astra":         { input: 0, output: 0, cached: 0, reasoning: 0 },
+    "claude-fable-5.1":    { input: 0, output: 0, cached: 0, reasoning: 0 },
+    "deepseek-v4-flash":   { input: 0, output: 0, cached: 0, reasoning: 0 },
+    "minimax-m3-free":     { input: 0, output: 0, cached: 0, reasoning: 0 },
+  },
   // GitHub Copilot (gh) — explicit override, matches canonical gpt-5.3-codex rate
   gh: {
     "gpt-5.3-codex": { input: 1.75, output: 14.00, cached: 0.175, reasoning: 14.00, cache_creation: 1.75 },

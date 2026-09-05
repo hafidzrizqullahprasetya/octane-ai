@@ -86,6 +86,13 @@ export function capabilitiesFromServiceKind(kind) {
  * otherwise mis-match. Only declare deltas vs DEFAULT.
  */
 export const MODEL_CAPABILITIES = {
+  // Experiential Labs free tier (2026-09): GPT-6 Astra hybrid thinking, Claude Fable 5.1 adaptive,
+  // DeepSeek V4 Flash native reasoning, MiniMax M3 adaptive thinking (no disable).
+  "gpt-6-astra":        { vision: false, reasoning: true, thinkingFormat: "openai", thinkingEffortSupported: true, contextWindow: 1050000, maxOutput: 128000 },
+  "claude-fable-5.1":   { vision: true, reasoning: true, thinkingFormat: "claude-budget", contextWindow: 1000000, maxOutput: 128000 },
+  "deepseek-v4-flash-exp": { vision: false, reasoning: true, thinkingFormat: "deepseek", contextWindow: 1050000, maxOutput: 128000 },
+  "minimax-m3-free":    { vision: true, reasoning: true, thinkingFormat: "openai", thinkingCanDisable: false, contextWindow: 512000, maxOutput: 131072 },
+
   // Claude Fable 5.1, Opus 5, 4.6/4.7/4.8, and Kiro Sonnet 5 have 1M context + adaptive thinking (override generic claude pattern)
   "claude-fable-5-1": { vision: true, reasoning: true, search: true, thinkingFormat: "claude-adaptive", thinkingCanDisable: false, contextWindow: 1000000, maxOutput: 128000 },
   "claude-opus-5":     { vision: true, reasoning: true, search: true, thinkingFormat: "claude-adaptive", contextWindow: 1000000, maxOutput: 128000 },
