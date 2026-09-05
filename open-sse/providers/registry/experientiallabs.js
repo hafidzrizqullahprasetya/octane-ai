@@ -24,9 +24,14 @@ export default {
   },
   category: "free",
   authType: "apikey",
+  authModes: ["apikey"],
   transport: {
     baseUrl: "https://api.experientiallabs.ai/v1/chat/completions",
     format: "openai",
+  },
+  features: {
+    usage: true,
+    usageApikey: true,
   },
   models: [
     { id: "gpt-6-astra", name: "GPT-6 Astra", upstreamModelId: "gpt-6-astra", thinking: true, contextLength: 1050000 },

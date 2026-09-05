@@ -22,10 +22,18 @@ export default {
   },
   category: "free",
   noAuth: true,
+  authModes: ["apikey"],
   transport: {
     baseUrl: "http://octane-zai:18787/v1/chat/completions",
     format: "openai",
     noAuth: true,
+    usage: {
+      url: "http://octane-zai:18787/v1/usage",
+    },
+  },
+  features: {
+    usage: true,
+    usageApikey: true,
   },
   models: [
     { id: "glm-5.3", name: "GLM 5.3", upstreamModelId: "glm-5.3", strip: ["image", "audio"], contextLength: 1000000 },
