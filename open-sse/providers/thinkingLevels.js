@@ -55,6 +55,10 @@ const PATTERN_THINKING = [
   { provider: "codebuddy-cn", pattern: "deepseek-v4*", levels: ["low", "high", "xhigh"] },
   { provider: "codebuddy-cn", pattern: "hy3*",         levels: ["low", "high"] },
   { provider: "codebuddy-cn", pattern: "hy4*",         levels: ["high"] },
+  { provider: "experientiallabs", pattern: "gpt-6-astra*",        levels: ["none", "low", "medium", "high"] },
+  { provider: "experientiallabs", pattern: "claude-fable-5.1*",   levels: ["none", "low", "medium", "high", "max"] },
+  { provider: "experientiallabs", pattern: "deepseek-v4*",        levels: ["none", "low", "high", "max"] },
+  { provider: "experientiallabs", pattern: "minimax-m3*",         levels: ["none", "thinking"] },
 ];
 
 // Returns valid thinking levels for a model, or null when the model has no reasoning.
