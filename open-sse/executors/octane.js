@@ -142,22 +142,9 @@ export class OctaneExecutor extends BaseExecutor {
           providerSpecificData: proxyOptions || {},
         }];
       }
-      // Env-key providers: synthesize a credential from process.env when no DB
-      // connection exists for this provider (env-fallback pattern, cf. azure.js).
-      if (providerId === "experientiallabs" && process.env.EXPERIENTIALLABS_API_KEY?.trim()) {
-        const hasDbConn = (allConnections || ctx.providerConnections || []).some(c => c.provider === providerId && c.testStatus === "active");
-        if (!hasDbConn) {
-          candidates = [{
-            id: "env-key",
-            provider: providerId,
-            name: "env:EXPERIENTIALLABS_API_KEY",
-            isActive: true,
-            testStatus: "active",
-            // sengaja tanpa accessToken — ExperientialLabsExecutor.buildHeaders
-            // mengisi Authorization dari env (menimpa "Bearer undefined")
-          }];
-        }
-      }
+      // Env-key providers: EXPERIENTIALLABS_API_KEY dari env dipakai kalau tidak ada
+      // koneksi DB aktif untuk provider ini (env-fallback pattern, cf. azure.js).
+      const explabsEnvReady = providerId === "experientiallabs" && !!process.env.EXPERIENTIALLABS_API_KEY?.trim();
       if (sourceConns.length && !executor.noAuth) {
         candidates = sourceConns
           .filter(c => c.provider === providerId && c.testStatus === "active")
@@ -180,8 +167,15 @@ export class OctaneExecutor extends BaseExecutor {
         // Fallback: kalau tidak ada strict match tapi ada active, pakai yang pertama (untuk opencode yang tidak strict)
         if (candidates.length === 0 && !executor.noAuth) {
           const any = sourceConns.find(c => c.provider === providerId && c.testStatus === "active");
-          if (any) candidates = [any];
+          if (any) {
+            candidates = [any];
+          } else if (explabsEnvReady) {
+            candidates = [{ id: "env-key", provider: providerId, name: "env:EXPERIENTIALLABS_API_KEY", isActive: true, testStatus: "active" }];
+          }
         }
+      } else if (explabsEnvReady) {
+        // Tidak ada koneksi DB sama sekali — tetap bisa jalan via env key
+        candidates = [{ id: "env-key", provider: providerId, name: "env:EXPERIENTIALLABS_API_KEY", isActive: true, testStatus: "active" }];
       }
       // Coba tiap kandidat akun yang strict match (reuse sesi per akun, tidak bikin sesi baru per test)
       for (const conn of candidates) {
