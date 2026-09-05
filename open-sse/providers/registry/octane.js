@@ -52,6 +52,9 @@ export default {
     { id: "mimo-v2.5(medium)", name: "MiMo V2.5 (Medium)", upstreamModelId: "mimo/mimo-v2.5", thinking: true },
     { id: "mimo-v2.5(high)", name: "MiMo V2.5 (High)", upstreamModelId: "mimo/mimo-v2.5", thinking: true },
     { id: "mimo-v2.5(max)", name: "MiMo V2.5 (Max)", upstreamModelId: "mimo/mimo-v2.5", thinking: true },
+    // Octane-ZAI self-hosted (GLM via akun Z.ai sendiri, 1M context)
+    { id: "glm-5.3", name: "GLM 5.3", upstreamModelId: "glm-5.3", contextLength: 1000000 },
+    { id: "glm-5.3-flash", name: "GLM 5.3 Flash", upstreamModelId: "glm-5.3-flash", thinking: true, vision: true, contextLength: 1000000 },
     // Opencode Free extras
     { id: "muse-spark-1.3-contributor-free", name: "Muse Spark 1.3 Contributor Free", upstreamModelId: "muse-spark-1.3-contributor-free" },
     { id: "ox-alpha-free", name: "Ox Alpha Free", upstreamModelId: "ox-alpha-free" },

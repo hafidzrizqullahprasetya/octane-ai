@@ -22,6 +22,24 @@ services:
       HEADROOM_URL: http://headroom:8787
     depends_on:
       - headroom
+      - octane-zai
+
+  octane-zai:
+    build: ../octane-zai
+    container_name: octane-zai
+    restart: always
+    mem_limit: 256m
+    memswap_limit: 256m
+    labels:
+      - "com.centurylinklabs.watchtower.scope=octane"
+    ports:
+      - "127.0.0.1:18787:18787"
+    volumes:
+      - ./data-octanezai:/data
+    environment:
+      OCTANE_ZAI_DIR: /data
+      PORT: "18787"
+      HOSTNAME: "0.0.0.0"
 
   headroom:
     image: ghcr.io/chopratejas/headroom:latest
