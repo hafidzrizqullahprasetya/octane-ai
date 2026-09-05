@@ -133,3 +133,50 @@ describe("registry + plan constant", () => {
     assert.deepEqual(entry.authModes, ["apikey"]);
   });
 });
+
+// Integration: real sqlite + full handler path. Catches wiring bugs the pure
+// tests can't (e.g. SELECT missing the model column — the row reaches
+// computeElQuotas without .model and is silently skipped).
+describe("getExperientialLabsUsage (real sqlite integration)", () => {
+  it("returns quota rows from a real usageHistory table", async () => {
+    const fs = await import("node:fs");
+    const os = await import("node:os");
+    const path = await import("node:path");
+    let Database;
+    try {
+      Database = (await import("better-sqlite3")).default;
+    } catch {
+      console.log("skip: better-sqlite3 unavailable");
+      return;
+    }
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "el-usage-"));
+    const dbFile = path.join(dir, "data.sqlite");
+    const db = new Database(dbFile);
+    db.exec(`CREATE TABLE usageHistory (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp TEXT, provider TEXT, model TEXT,
+      connectionId TEXT, apiKey TEXT, endpoint TEXT, promptTokens INTEGER,
+      completionTokens INTEGER, cost REAL, status TEXT, tokens TEXT, meta TEXT)`);
+    db.prepare(`INSERT INTO usageHistory (timestamp, provider, model, promptTokens, completionTokens, status)
+                VALUES (?, 'octane', 'gpt-6-astra(high)', 26000, 14000, 'ok')`)
+      .run(new Date().toISOString());
+    db.close();
+
+    const prev = process.env.OCTANE_DB_PATH;
+    process.env.OCTANE_DB_PATH = dbFile;
+    try {
+      const { getExperientialLabsUsage } = await import(
+        "../../open-sse/services/usage/experientiallabs.js"
+      );
+      const result = await getExperientialLabsUsage("x", {}, null);
+      assert.ok(!result.message, `unexpected message: ${result.message}`);
+      const q = result.quotas["Hourly usage · gpt-6-astra (1h)"];
+      assert.ok(q, `missing key: ${Object.keys(result.quotas || {}).join(", ")}`);
+      assert.equal(q.used, 40000);
+      assert.equal(q.total, 150000);
+    } finally {
+      if (prev === undefined) delete process.env.OCTANE_DB_PATH;
+      else process.env.OCTANE_DB_PATH = prev;
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
