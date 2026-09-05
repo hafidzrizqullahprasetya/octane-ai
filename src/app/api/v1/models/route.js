@@ -325,11 +325,20 @@ export async function buildModelsList(kindFilter, options = {}) {
       for (const model of providerModels) {
         if (!kindFilter.includes(modelKind(model))) continue;
         if (isDisabled(alias, model.id)) continue;
-        models.push({
+        const entry = {
           id: `${alias}/${model.id}`,
           object: "model",
           owned_by: alias,
-        });
+        };
+        // Sama seperti jalur berkoneksi (baris ~520-533): emit batas token
+        // top-level agar klien OpenAI-compatible (Hermes probe-down, dll)
+        // membaca context window asli, bukan fallback 256K.
+        if (kindFilter.includes(LLM_KIND) && modelKind(model) === LLM_KIND) {
+          const caps = getCapabilitiesForModel(providerId, model.id);
+          if (Number.isFinite(caps?.contextWindow)) entry.context_length = caps.contextWindow;
+          if (Number.isFinite(caps?.maxOutput)) entry.max_completion_tokens = caps.maxOutput;
+        }
+        models.push(entry);
       }
     }
 
@@ -552,6 +561,29 @@ export async function buildModelsList(kindFilter, options = {}) {
           owned_by: outputAlias,
         });
       }
+    }
+  }
+
+  // Koleksi virtual noAuth (octane = unified ot/): executor-nya delegasi ke
+  // koneksi provider underlying, jadi servable tanpa baris koneksi sendiri —
+  // tapi loop per-koneksi di atas nge-skip provider tanpa koneksi sehingga
+  // ot/* tidak pernah muncul di /v1/models. List dari statik registry +
+  // capabilities (context 1M) agar klien OpenAI-compatible (Hermes
+  // probe-down, dll) membaca window asli, bukan fallback 256K.
+  // Scope sengaja hanya octane: provider noAuth lain belum tentu servable
+  // tanpa akun. Guard covered + dedup bawah cegah duplikat bila suatu saat
+  // octane punya koneksi sendiri.
+  if (kindFilter.includes(LLM_KIND) && !activeConnectionByProvider.has("octane")) {
+    const alias = getProviderAlias("octane") || PROVIDER_ID_TO_ALIAS.octane || "ot";
+    const staticModels = PROVIDER_MODELS[alias] || PROVIDER_MODELS.octane || [];
+    for (const m of staticModels) {
+      if (!m?.id) continue;
+      if (modelKind(m) && modelKind(m) !== LLM_KIND) continue;
+      const caps = getCapabilitiesForModel("octane", m.id);
+      const entry = { id: `${alias}/${m.id}`, object: "model", owned_by: alias };
+      if (Number.isFinite(caps?.contextWindow)) entry.context_length = caps.contextWindow;
+      if (Number.isFinite(caps?.maxOutput)) entry.max_completion_tokens = caps.maxOutput;
+      models.push(entry);
     }
   }
 
