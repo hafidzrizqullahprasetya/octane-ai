@@ -71,20 +71,33 @@ describe("computeElQuotas (pure)", () => {
     assert.equal(quotas2["EL-1 · claude-fable-5.1 (1h)"].resetAt, "2026-09-05T10:00:00.000Z");
   });
 
-  it("models without a known cap are unlimited with used shown", () => {
-    const rows = [row("deepseek-v4-flash", 1234, 111), row("minimax-m3-free", 500, 0)];
+  it("suffix-tolerant: effort-suffixed model ids count into their bucket", () => {
+    const rows = [
+      row("gpt-6-astra(high)", 40000, 5000),
+      row("gpt-6-astra", 10000, 0),
+    ];
     const quotas = computeElQuotas(rows, DEFAULT_ACCOUNTS, NOW);
-    const ds = quotas["EL-1 · deepseek-v4-flash (1h)"];
+    const q = quotas["EL-1 · gpt-6-astra (1h)"];
+    assert.ok(q, `missing key: ${Object.keys(quotas).join(", ")}`);
+    assert.equal(q.used, 55000);
+  });
+
+  it("bare deepseek-v4-flash / minimax-m3 are freebuff-served and NOT counted as EL", () => {
+    const rows = [row("deepseek-v4-flash", 999999, 999999), row("minimax-m3", 500, 0)];
+    const quotas = computeElQuotas(rows, DEFAULT_ACCOUNTS, NOW);
+    assert.deepEqual(quotas, {});
+  });
+
+  it("models without a known cap are unlimited with used shown", () => {
+    const rows = [row("deepseek-v4-flash-exp", 1234, 111), row("minimax-m3-free", 500, 0)];
+    const quotas = computeElQuotas(rows, DEFAULT_ACCOUNTS, NOW);
+    const ds = quotas["EL-1 · deepseek-v4-flash-exp (1h)"];
     assert.equal(ds.unlimited, true);
     assert.equal(ds.used, 1345);
     assert.equal(ds.total, 0);
     const mm = quotas["EL-1 · minimax-m3-free (1h)"];
     assert.equal(mm.unlimited, true);
     assert.equal(mm.used, 500);
-    // Legacy/exp variants are tracked too.
-    assert.ok(quotas["EL-1 · deepseek-v4-flash-exp (1h)"] === undefined); // no rows for it
-    const expRows = [row("minimax-m3", 42, 0)];
-    assert.equal(computeElQuotas(expRows, DEFAULT_ACCOUNTS, NOW)["EL-1 · minimax-m3 (1h)"].unlimited, true);
   });
 
   it("no accounts configured → single default 'Hourly usage' account with EL 429 caps", () => {

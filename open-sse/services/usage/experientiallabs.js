@@ -16,16 +16,31 @@
 
 import path from "node:path";
 
-// Models counted toward the hourly view. Superset of the registry model list —
-// includes the -exp / legacy variants that still log usageHistory rows.
-const EL_TRACKED_MODELS = [
-  "gpt-6-astra",
-  "claude-fable-5.1",
-  "deepseek-v4-flash",
-  "minimax-m3-free",
-  "deepseek-v4-flash-exp",
-  "minimax-m3",
+// Matcher suffix-toleran: usageHistory mencatat mask + effort suffix
+// ("gpt-6-astra(high)", "claude-fable-5.1", …). Bare "deepseek-v4-flash" and
+// "minimax-m3" via ot/ are FREEBUFF-served (OctaneExecutor MODEL_PROVIDER_MAP:
+// deepseek/mimo -> freebuff) and must NOT count into EL buckets.
+const EL_MODEL_MATCHERS = [
+  { prefix: "gpt-6-astra", bucket: "gpt-6-astra" },
+  { prefix: "claude-fable-5.1", bucket: "claude-fable-5.1" },
+  { prefix: "deepseek-v4-flash-exp", bucket: "deepseek-v4-flash-exp" },
+  { prefix: "minimax-m3-free", bucket: "minimax-m3-free" },
 ];
+
+/**
+ * Pure: map a usageHistory model id to its EL bucket, or "" when the row is
+ * not Experiential Labs traffic.
+ * @param {string} model
+ * @returns {string}
+ */
+export function elModelBucket(model) {
+  if (typeof model !== "string" || !model) return "";
+  const base = model.toLowerCase();
+  for (const { prefix, bucket } of EL_MODEL_MATCHERS) {
+    if (base.startsWith(prefix)) return bucket;
+  }
+  return "";
+}
 
 // Hourly caps from the real EL 429 message (2026-09-05). Models not listed
 // here are reported as unlimited.
@@ -69,16 +84,17 @@ export function computeElQuotas(rows, accounts, now = Date.now()) {
   const usedByModel = {};
   for (const row of Array.isArray(rows) ? rows : []) {
     if (!row || typeof row !== "object") continue;
-    const model = typeof row.model === "string" ? row.model : "";
-    if (!EL_TRACKED_MODELS.includes(model)) continue;
+    const bucket = elModelBucket(row.model);
+    if (!bucket) continue;
     const prompt = Number(row.promptTokens) || 0;
     const completion = Number(row.completionTokens) || 0;
-    usedByModel[model] = (usedByModel[model] || 0) + prompt + completion;
+    usedByModel[bucket] = (usedByModel[bucket] || 0) + prompt + completion;
   }
 
+  const buckets = [...new Set(EL_MODEL_MATCHERS.map((m) => m.bucket))];
   const quotas = {};
   const n = accountList.length;
-  for (const model of EL_TRACKED_MODELS) {
+  for (const model of buckets) {
     const totalUsed = usedByModel[model];
     if (!totalUsed) continue;
 
@@ -129,12 +145,15 @@ export async function getExperientialLabsUsage(apiKey, providerSpecificData, pro
       const { default: Database } = await import("better-sqlite3");
       db = new Database(dbPath(), { readonly: true, fileMustExist: true });
       const since = new Date(Date.now() - HOUR_MS).toISOString();
-      const placeholders = EL_TRACKED_MODELS.map(() => "?").join(", ");
+      // Suffix-tolerant match: model rows carry effort suffixes like
+      // "gpt-6-astra(high)". LIKE prefix keeps bare + suffixed ids.
+      const likeClauses = EL_MODEL_MATCHERS.map(() => "model LIKE ?").join(" OR ");
+      const likeParams = EL_MODEL_MATCHERS.map((m) => `${m.prefix}%`);
       const stmt = db.prepare(
         `SELECT promptTokens, completionTokens, connectionId, timestamp FROM usageHistory
-         WHERE provider = 'octane' AND model IN (${placeholders}) AND timestamp >= ?`,
+         WHERE provider = 'octane' AND (${likeClauses}) AND timestamp >= ?`,
       );
-      rows = stmt.all(...EL_TRACKED_MODELS, since);
+      rows = stmt.all(...likeParams, since);
     } catch (dbError) {
       // Fail-open: missing DB file / native binding unavailable → degrade gracefully.
       return { plan: EL_PLAN, message: `Experiential Labs usage unavailable: ${dbError.message}` };
