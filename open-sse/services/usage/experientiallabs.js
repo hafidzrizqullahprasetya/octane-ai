@@ -150,7 +150,7 @@ export async function getExperientialLabsUsage(apiKey, providerSpecificData, pro
       const likeClauses = EL_MODEL_MATCHERS.map(() => "model LIKE ?").join(" OR ");
       const likeParams = EL_MODEL_MATCHERS.map((m) => `${m.prefix}%`);
       const stmt = db.prepare(
-        `SELECT promptTokens, completionTokens, connectionId, timestamp FROM usageHistory
+        `SELECT model, promptTokens, completionTokens, connectionId, timestamp FROM usageHistory
          WHERE provider = 'octane' AND (${likeClauses}) AND timestamp >= ?`,
       );
       rows = stmt.all(...likeParams, since);
