@@ -84,6 +84,7 @@ import p81 from "./openai.js";
 import p82 from "./opencode-go.js";
 import p83 from "./opencode.js";
 import p83a from "./octane.js";
+import p83b from "./octane-zai.js";
 import p84 from "./openrouter.js";
 import p85 from "./perplexity-agent.js";
 import p86 from "./perplexity-web.js";
@@ -210,6 +211,7 @@ export default [
   p82,
   p83,
   p83a,
+  p83b,
   p84,
   p85,
   p86,

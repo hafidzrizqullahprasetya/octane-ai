@@ -26,6 +26,7 @@ import { DefaultExecutor } from "./default.js";
 import { DevinCliExecutor } from "./devin-cli.js";
 import { FreebuffExecutor } from "./freebuff.js";
 import { OctaneExecutor } from "./octane.js";
+import { OctaneZaiExecutor } from "./octane-zai.js";
 
 const executors = {
   antigravity: new AntigravityExecutor(),
@@ -61,6 +62,7 @@ const executors = {
   freebuff: new FreebuffExecutor(),
   octane: new OctaneExecutor(),
   ot: new OctaneExecutor(),
+  "octane-zai": new OctaneZaiExecutor(),
 };
 
 const defaultCache = new Map();
