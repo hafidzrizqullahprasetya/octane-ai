@@ -72,16 +72,19 @@ describe("OpenCode Free endpoint routing", () => {
 
   it("normalizes Chat token/thinking fields only for the Responses model", () => {
     const executor = new OpenCodeExecutor();
-    const muse = { max_tokens: 4096, reasoning_effort: "high" };
-    executor.transformRequest(MUSE, muse, true, {});
-    expect(muse.max_output_tokens).toBe(4096);
-    expect(muse.max_tokens).toBeUndefined();
-    expect(muse.reasoning).toEqual({ effort: "high", summary: "auto" });
+    // transformRequest is copy-on-write: it must not mutate the caller's body.
+    // The Responses model gets a normalized COPY (reasoning + max_output_tokens).
+    const museIn = { max_tokens: 4096, reasoning_effort: "high" };
+    const museOut = executor.transformRequest(MUSE, museIn, true, {});
+    expect(museOut.max_output_tokens).toBe(4096);
+    expect(museOut.max_tokens).toBeUndefined();
+    expect(museOut.reasoning).toEqual({ effort: "high", summary: "auto" });
+    // Caller body untouched.
+    expect(museIn.max_output_tokens).toBeUndefined();
+    expect(museIn.max_tokens).toBe(4096);
+    expect(museIn.reasoning_effort).toBe("high");
 
-    const chat = { max_tokens: 4096, reasoning_effort: "high" };
-    executor.transformRequest("big-pickle", chat, true, {});
-    expect(chat.max_tokens).toBe(4096);
-    expect(chat.max_output_tokens).toBeUndefined();
-    expect(chat.reasoning_effort).toBe("high");
+    const chatIn = { max_tokens: 4096, reasoning_effort: "high" };
+    expect(executor.transformRequest("big-pickle", chatIn, true, {}).reasoning_effort).toBe("high");
   });
 });

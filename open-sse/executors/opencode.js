@@ -68,6 +68,7 @@ function normalizeOpencodeReasoning(model, body) {
 import { stripThinkingSuffix, parseSuffix } from "../translator/concerns/thinkingUnified.js";
 import { openaiToOpenAIResponsesRequest } from "../translator/request/openai-responses.js";
 import { openaiResponsesToOpenAIResponse } from "../translator/response/openai-responses.js";
+import { FORMATS } from "../translator/formats.js";
 import { initState } from "../translator/index.js";
 import { proxyAwareFetch } from "../utils/proxyFetch.js";
 
@@ -111,6 +112,14 @@ export class OpenCodeExecutor extends BaseExecutor {
       res.reasoning = { effort, summary: "auto" };
       delete res.reasoning_effort;
       delete res.messages;
+      // Responses names the output cap max_output_tokens, not max_tokens.
+      // Bodies arriving here already in `input` shape (native Responses
+      // clients, or chatCore's openai→responses translation) may still carry
+      // the chat field — promote it instead of silently dropping the cap.
+      if (res.max_output_tokens === undefined) {
+        if (res.max_completion_tokens !== undefined) res.max_output_tokens = res.max_completion_tokens;
+        else if (res.max_tokens !== undefined) res.max_output_tokens = res.max_tokens;
+      }
       delete res.max_tokens;
       delete res.max_completion_tokens;
       return res;
@@ -231,6 +240,11 @@ export class OpenCodeExecutor extends BaseExecutor {
         url,
         headers,
         transformedBody,
+        // The /responses branch decodes upstream Responses SSE into OpenAI
+        // Chat Completions chunks (see openaiResponsesToOpenAIResponse), so
+        // declare that shape explicitly: chatCore must NOT run a second
+        // openai-responses→client conversion on top of it.
+        responseFormat: FORMATS.OPENAI,
       };
     }
 

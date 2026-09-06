@@ -80,23 +80,211 @@ function injectFreebuffMarker(body) {
 // found for {model}" (verified live 2026-08-14; the freebuff-proxy bridge
 // works around the same gate by injecting this definition). Every request that
 // declares tools must carry it or the router finds no serving endpoint.
+const END_TURN_NAME = "end_turn";
 const END_TURN_TOOL = {
   type: "function",
   function: {
-    name: "end_turn",
+    name: END_TURN_NAME,
     description: "Signal the end of the current task.",
     parameters: { type: "object", properties: {} },
   },
 };
 
+function toolDeclName(tool) {
+  if (!tool || typeof tool !== "object") return "";
+  const fn = tool.function && typeof tool.function === "object" ? tool.function : null;
+  const raw = typeof tool.name === "string" ? tool.name
+    : (typeof fn?.name === "string" ? fn.name : "");
+  return raw.trim();
+}
+
 function injectEndTurnTool(body) {
   const tools = body?.tools;
   if (!Array.isArray(tools) || tools.length === 0) return body;
-  const hasEndTurn = tools.some(
-    (t) => t?.function?.name === "end_turn",
-  );
+  const hasEndTurn = tools.some((t) => toolDeclName(t) === END_TURN_NAME);
   if (hasEndTurn) return body;
   return { ...body, tools: [...tools, END_TURN_TOOL] };
+}
+
+// ── end_turn response filter ──────────────────────────────────────────────
+// `end_turn` is declared ONLY to satisfy the upstream foreign_toolset gate —
+// the CLI harness intercepts the call itself and never forwards it. Through
+// this proxy, a leaked `end_turn` tool_call reaches downstream harnesses
+// (opencode, cline, …) that never declared it: the client tries to run an
+// unknown tool and the turn stalls instead of ending ("kadang nyendat").
+// Strip server-injected `end_turn` calls from both streaming and JSON
+// responses. A client that declares its own `end_turn` is left untouched
+// (see the clientDeclaredEndTurn guard in execute()).
+function isEndTurnCall(tc) {
+  return tc?.function?.name === END_TURN_NAME || tc?.name === END_TURN_NAME;
+}
+
+function mergeEndTurnCallIndex(acc, tc) {
+  if (!tc || typeof tc !== "object") return;
+  const entry = acc.get(tc.index ?? 0) ?? {};
+  if (typeof tc.id === "string" && tc.id) entry.id = tc.id;
+  if (typeof tc?.function?.name === "string" && tc.function.name) entry.name = tc.function.name;
+  if (isEndTurnCall(tc)) entry.endTurn = true;
+  acc.set(tc.index ?? 0, entry);
+}
+
+// Non-streaming JSON: drop end_turn tool_calls in place; collapse
+// finish_reason "tool_calls"→"stop" when nothing callable remains.
+export function stripEndTurnFromChatMessage(parsed) {
+  const msg = parsed?.choices?.[0]?.message;
+  if (!msg || !Array.isArray(msg.tool_calls) || msg.tool_calls.length === 0) return false;
+  const kept = msg.tool_calls.filter((tc) => !isEndTurnCall(tc));
+  if (kept.length === msg.tool_calls.length) return false;
+  msg.tool_calls = kept;
+  if (kept.length === 0) {
+    if (parsed.choices[0].finish_reason === "tool_calls") parsed.choices[0].finish_reason = "stop";
+    if (msg.content == null) msg.content = "";
+  }
+  return true;
+}
+
+export async function stripEndTurnJsonResponse(response) {
+  let text = "";
+  try { text = await response.text(); } catch { return response; }
+  let parsed;
+  try { parsed = JSON.parse(text); } catch { return response; }
+  if (!stripEndTurnFromChatMessage(parsed)) return response;
+  return new Response(JSON.stringify(parsed), {
+    status: response.status,
+    statusText: response.statusText,
+    headers: response.headers,
+  });
+}
+
+// Streaming: tool_call fragments are buffered (not forwarded) until the turn
+// ends — the name can arrive split across chunks, and once an index is known
+// to be end_turn its earlier fragments must never reach the client either.
+// Text and all other events stream through untouched. On the final chunk (or
+// [DONE]/close) buffered end_turn pieces are dropped and the remaining calls
+// are re-indexed contiguously; finish_reason tool_calls→stop when isolated.
+export function stripEndTurnStream(response) {
+  const upstream = response?.body;
+  if (!upstream) return response;
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+  let buffer = "";
+  let toolBuffer = []; // [{ parsed, tcs }] held until turn end
+  const pending = new Map(); // index -> { id?, name?, endTurn? }
+  let flushed = false;
+
+  const toolCallsOf = (parsed) => {
+    const tcs = parsed?.choices?.[0]?.delta?.tool_calls;
+    return Array.isArray(tcs) && tcs.length > 0 ? tcs : null;
+  };
+
+  const parseLine = (line) => {
+    const trimmed = line.trim();
+    if (!trimmed || !trimmed.startsWith("data:")) return { kind: "raw", line };
+    const payload = trimmed.slice(5).trim();
+    if (payload === "[DONE]") return { kind: "done" };
+    let parsed = null;
+    try { parsed = JSON.parse(payload); } catch { return { kind: "raw", line }; }
+    if (!parsed || typeof parsed !== "object") return { kind: "raw", line };
+    return { kind: "data", parsed };
+  };
+
+  const flushToolBuffer = (controller, finishParsed) => {
+    if (flushed) return null;
+    flushed = true;
+    const droppedIdx = new Set(
+      [...pending].filter(([, e]) => e?.endTurn).map(([i]) => i),
+    );
+    const kept = [];
+    for (const { parsed, tcs } of toolBuffer) {
+      const ntcs = tcs.filter((tc) => !droppedIdx.has(tc?.index ?? 0));
+      if (ntcs.length > 0) kept.push({ parsed, tcs: ntcs });
+    }
+    toolBuffer = [];
+    const remap = new Map();
+    let next = 0;
+    for (const { tcs } of kept) {
+      for (const tc of tcs) {
+        const i = tc?.index ?? 0;
+        if (!remap.has(i)) remap.set(i, next++);
+      }
+    }
+    for (const { parsed, tcs } of kept) {
+      const choices = (parsed.choices || []).map((c) => ({
+        ...c,
+        delta: {
+          ...(c?.delta || {}),
+          tool_calls: tcs.map((tc) => ({ ...tc, index: remap.get(tc?.index ?? 0) ?? 0 })),
+        },
+      }));
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ ...parsed, choices })}\n\n`));
+    }
+    // Isolated end_turn: the turn really ended, just not via a tool.
+    if (finishParsed && droppedIdx.size > 0 && kept.length === 0) {
+      const choice = finishParsed?.choices?.[0];
+      if (choice && choice.finish_reason === "tool_calls") choice.finish_reason = "stop";
+    }
+    return finishParsed || null;
+  };
+
+  const stream = upstream.pipeThrough(new TransformStream({
+    transform(chunk, controller) {
+      buffer += decoder.decode(chunk, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+      for (const line of lines) {
+        const item = parseLine(line);
+        if (item.kind === "raw") {
+          controller.enqueue(encoder.encode(`${line}\n`));
+          continue;
+        }
+        if (item.kind === "done") {
+          flushToolBuffer(controller, null);
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          continue;
+        }
+        const tcs = toolCallsOf(item.parsed);
+        if (!tcs) {
+          const finish = item.parsed?.choices?.[0]?.finish_reason;
+          if (finish) {
+            const adjusted = flushToolBuffer(controller, item.parsed);
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(adjusted)}\n\n`));
+          } else {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(item.parsed)}\n\n`));
+          }
+          continue;
+        }
+        for (const tc of tcs) mergeEndTurnCallIndex(pending, tc);
+        toolBuffer.push({ parsed: item.parsed, tcs });
+      }
+    },
+    flush(controller) {
+      const rest = buffer.trim();
+      if (rest && !rest.startsWith("data:")) {
+        // Trailing garbage (not a partial event) — forward verbatim.
+        controller.enqueue(encoder.encode(`${buffer}\n`));
+        buffer = "";
+      } else if (rest) {
+        const item = parseLine(rest);
+        if (item.kind === "data" && !toolCallsOf(item.parsed)) {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(item.parsed)}\n\n`));
+        } else if (item.kind === "data") {
+          for (const tc of toolCallsOf(item.parsed)) mergeEndTurnCallIndex(pending, tc);
+          toolBuffer.push({ parsed: item.parsed, tcs: toolCallsOf(item.parsed) });
+        }
+        buffer = "";
+      }
+      // Abrupt close without a finish event: kept calls still go out (the
+      // outer stream layer synthesizes the terminal); isolated end_turn
+      // stays dropped so the client never sees the unknown tool.
+      flushToolBuffer(controller, null);
+    },
+  }));
+
+  return new Response(stream, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: response.headers,
+  });
 }
 
 function normalizeFreebuffModel(model) {
@@ -589,6 +777,13 @@ export class FreebuffExecutor extends BaseExecutor {
       throw new Error("Freebuff requires a connected Freebuff login (no access token found)");
     }
 
+    // Whether the CLIENT really declared end_turn itself (Responses `{ name }`
+    // included). Only then may an end_turn call reach it; otherwise our
+    // gate-satisfying injection must be filtered back out of the response or
+    // the harness stalls on an unknown tool.
+    const clientDeclaredEndTurn = Array.isArray(body?.tools)
+      && body.tools.some((t) => toolDeclName(t) === END_TURN_NAME);
+
     // Fail fast while a known-dead (account,model) / (proxy,model) pair is in
     // cooldown — no session claim, no run registration, no upstream spam.
     const proxyKey = proxyKeyOf(proxyOptions);
@@ -772,6 +967,26 @@ export class FreebuffExecutor extends BaseExecutor {
       // Best-effort run accounting, mirroring the CLI.
       markFinished(response.ok ? "completed" : "failed");
 
+      // Gate-satisfying `end_turn` injection (see injectEndTurnTool) must not
+      // leak back into the response: strip the invented tool_call unless the
+      // client genuinely declared it. Otherwise downstream harnesses stall on
+      // a tool they never defined.
+      if (response.ok && !clientDeclaredEndTurn && Array.isArray(body?.tools) && body.tools.length > 0) {
+        try {
+          if (stream) {
+            response = stripEndTurnStream(response);
+          } else {
+            const maybe = await stripEndTurnJsonResponse(response);
+            if (maybe !== response) {
+              log?.debug?.("TOOL", `Freebuff filtered server-injected end_turn tool_call for ${model}`);
+              response = maybe;
+            }
+          }
+        } catch (error) {
+          log?.warn?.("TOOL", `Freebuff end_turn filter threw (passing through): ${error?.message || error}`);
+        }
+      }
+
       return { response, url, headers, transformedBody };
     } finally {
       // Never leave the current run dangling on thrown paths (network/abort/gate).
@@ -795,6 +1010,10 @@ export const __test__ = {
   SESSION_STALE_CODES,
   FREEBUFF_VISION_MODELS,
   FREEBUFF_MODEL_CONTEXT_WINDOWS,
+  END_TURN_NAME,
+  stripEndTurnFromChatMessage,
+  stripEndTurnJsonResponse,
+  stripEndTurnStream,
 };
 
 export default FreebuffExecutor;

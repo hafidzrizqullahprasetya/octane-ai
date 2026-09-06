@@ -20,20 +20,23 @@ describe("OpenCode Free Muse Spark thinking", () => {
   it("advertises reasoning and the requested model limits", () => {
     expect(PROVIDER_MODELS.oc?.some((model) => model.id === MODEL)).toBe(true);
     expect(PROVIDER_MODELS.oc?.some((model) => model.id === "muse-spark-1.3-contributor-free")).toBe(true);
+    // Dashboard displays the 1M BYPASS window (getCapabilitiesForModel forces
+    // BYPASS_CONTEXT_WINDOW on every path) — not the stale 1048576 reading.
     for (const m of [MODEL, "muse-spark-1.3-contributor-free", "muse-spark-1.4-contributor-free", "muse-spark-2.0-contributor-free"]) {
       expect(getCapabilitiesForModel(PROVIDER, m)).toMatchObject({
         reasoning: true,
         thinkingFormat: "openai",
-        contextWindow: 1048576,
+        contextWindow: 1000000,
         maxOutput: 131072,
       });
       expect(getCapabilitiesForModel(PROVIDER, `oc/${m}`)).toMatchObject({
         reasoning: true,
-        contextWindow: 1048576,
+        contextWindow: 1000000,
         maxOutput: 131072,
       });
+      // UI picker levels are the no-"none" muse ladder (pattern override in
+      // thinkingLevels.js); thinkingCanDisable stays true for the executor.
       expect(getThinkingLevels(PROVIDER, m)).toEqual([
-        "none",
         "minimal",
         "low",
         "medium",
