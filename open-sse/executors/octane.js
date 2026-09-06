@@ -26,8 +26,9 @@ const MODEL_PROVIDER_MAP = {
   "deepseek-v4-flash": ["freebuff"],
   "mimo-v2.5": ["freebuff"],
   "muse-spark-1.3-contributor-free": ["opencode"],
-  "glm-5.3": ["octane-zai"],
-  "glm-5.3-flash": ["octane-zai"],
+  "glm-5.3": ["freebuff"],
+  "glm-5.3-flash": ["freebuff"],
+  "solar-pro4": ["freebuff"],
   "ox-alpha-free": ["opencode"],
   "mimo-v2.5-free": ["opencode"],
   "laguna-s-2.1-free": ["opencode"],
@@ -39,12 +40,9 @@ const MODEL_PROVIDER_MAP = {
 };
 
 const FREEBUFF_UPSTREAM_MODEL_MAP = {
-  "kimi-k3": "crof/kimi-k3-eco",
   "mimo-v2.5": "mimo/mimo-v2.5",
-};
-
-const FREEBUFF_AGENT_MODEL_MAP = {
-  "crof/kimi-k3-eco": "base3-free-kimi-k3-eco",
+  "glm-5.3-flash": "z-ai/glm-5.3-flash",
+  "glm-5.3": "z-ai/glm-5.3-flash",
 };
 
 // Experiential Labs: id mask ot/ -> id upstream (deepseek dibedakan supaya
@@ -246,7 +244,7 @@ export class OctaneExecutor extends BaseExecutor {
                 ? (EXPLABS_UPSTREAM_MODEL_MAP[cleanModel.split("(")[0].trim()] || cleanModel)
                 : cleanModel;
             if (providerId === "freebuff") {
-              log?.debug?.("OCTANE", `Freebuff route ot/${cleanModel} -> model=${providerModel} agent=${FREEBUFF_AGENT_MODEL_MAP[providerModel] || "default"} account=${providerCreds?.name || providerCreds?.email || "?"}`);
+              log?.debug?.("OCTANE", `Freebuff route ot/${cleanModel} -> model=${providerModel} account=${providerCreds?.name || providerCreds?.email || "?"}`);
             }
           const result = await executor.execute({
             model: providerModel,

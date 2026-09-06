@@ -64,34 +64,28 @@ export default {
     usage: true,
   },
   // Active & verified OctaneAI / Freebuff models with all thinking endpoints
+  // (6-model allowlist — mirrors executors/freebuff.js FREE_ROOT_AGENT_BY_MODEL)
+  // Default-only: the fb/ path strips thinking suffixes and drops
+  // reasoning_effort (base3 agents own reasoning server-side), so suffixed
+  // variants would be cosmetic — one entry per model, server default applies.
   models: [
     // 🧠 GPT-5.6 Luna (Vision + Reasoning)
-    { id: "gpt-5.6-luna(high)", name: "GPT-5.6 Luna (High)", upstreamModelId: "openai/gpt-5.6-luna" },
-    { id: "gpt-5.6-luna(xhigh)", name: "GPT-5.6 Luna (XHigh)", upstreamModelId: "openai/gpt-5.6-luna" },
-    { id: "gpt-5.6-luna(max)", name: "GPT-5.6 Luna (Max)", upstreamModelId: "openai/gpt-5.6-luna" },
-    { id: "gpt-5.6-luna", name: "GPT-5.6 Luna (Default)", upstreamModelId: "openai/gpt-5.6-luna" },
-
-    // 🌌 Kimi K3 (1.05M Context Reasoning)
-    { id: "kimi-k3(high)", name: "Kimi K3 (High)", upstreamModelId: "crof/kimi-k3-eco" },
-    { id: "kimi-k3(xhigh)", name: "Kimi K3 (XHigh)", upstreamModelId: "crof/kimi-k3-eco" },
-    { id: "kimi-k3(max)", name: "Kimi K3 (Max)", upstreamModelId: "crof/kimi-k3-eco" },
-    { id: "kimi-k3", name: "Kimi K3 (Default)", upstreamModelId: "crof/kimi-k3-eco" },
+    { id: "gpt-5.6-luna", name: "GPT-5.6 Luna", upstreamModelId: "openai/gpt-5.6-luna" },
 
     // ⚡ DeepSeek V4 Flash (High Speed / Night Route)
-    { id: "deepseek-v4-flash(high)", name: "DeepSeek V4 Flash (High)", upstreamModelId: "deepseek/deepseek-v4-flash" },
-    { id: "deepseek-v4-flash(max)", name: "DeepSeek V4 Flash (Max)", upstreamModelId: "deepseek/deepseek-v4-flash" },
-    { id: "deepseek-v4-flash", name: "DeepSeek V4 Flash (Default)", upstreamModelId: "deepseek/deepseek-v4-flash" },
+    { id: "deepseek-v4-flash", name: "DeepSeek V4 Flash", upstreamModelId: "deepseek/deepseek-v4-flash" },
 
     // 🌀 MiMo V2.5 (Unlimited Free)
     { id: "mimo-v2.5", name: "MiMo V2.5", upstreamModelId: "mimo/mimo-v2.5" },
 
-    // 🎨 Meta Muse Spark 1.3 (OpenCode Route) — new
-    { id: "muse-spark-1.3(minimal)", name: "Muse Spark 1.3 (Minimal)", upstreamModelId: "meta/muse-spark-1.3-contributor" },
-    { id: "muse-spark-1.3(low)", name: "Muse Spark 1.3 (Low)", upstreamModelId: "meta/muse-spark-1.3-contributor" },
-    { id: "muse-spark-1.3(medium)", name: "Muse Spark 1.3 (Medium)", upstreamModelId: "meta/muse-spark-1.3-contributor" },
-    { id: "muse-spark-1.3(high)", name: "Muse Spark 1.3 (High)", upstreamModelId: "meta/muse-spark-1.3-contributor" },
-    { id: "muse-spark-1.3(xhigh)", name: "Muse Spark 1.3 (XHigh)", upstreamModelId: "meta/muse-spark-1.3-contributor" },
-    { id: "muse-spark-1.3", name: "Muse Spark 1.3 (Default)", upstreamModelId: "meta/muse-spark-1.3-contributor" },
+    // 🧪 Z-AI GLM-5.3 Flash (Hero / Unmetered, server-pinned high — Default only)
+    { id: "glm-5.3-flash", name: "GLM-5.3 Flash", upstreamModelId: "z-ai/glm-5.3-flash" },
+
+    // ☀️ Upstage Solar Pro 4
+    { id: "solar-pro4", name: "Solar Pro 4", upstreamModelId: "upstage/solar-pro4" },
+
+    // 🎨 Meta Muse Spark 1.3 (via freebuff; for effort control use ot/muse-spark via opencode)
+    { id: "muse-spark-1.3", name: "Muse Spark 1.3", upstreamModelId: "meta/muse-spark-1.3-contributor" },
   ],
   // Login-flow host — the CLI in freebuff mode logs in via freebuff.com, and
   // the server builds loginUrl from the host it was called on, so the link the

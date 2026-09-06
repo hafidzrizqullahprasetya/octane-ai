@@ -29,12 +29,13 @@ export default {
     usage: true,
   },
   // Clean ot/ ids — tanpa meta/openai/crof prefix, branding ot/ langsung
+  // Default-only untuk rute freebuff (luna/deepseek/mimo/glm/solar): suffix
+  // thinking di-strip dan reasoning di-drop executor (server default), jadi
+  // varian suffix kosmetik. Varian thinking cuma untuk rute yang effort-nya
+  // diteruskan (muse via opencode, experientiallabs).
   models: [
     // Freebuff core (vision+reasoning)
     { id: "gpt-5.6-luna", name: "GPT-5.6 Luna", upstreamModelId: "openai/gpt-5.6-luna" },
-    { id: "gpt-5.6-luna(high)", name: "GPT-5.6 Luna (High)", upstreamModelId: "openai/gpt-5.6-luna" },
-    { id: "gpt-5.6-luna(xhigh)", name: "GPT-5.6 Luna (XHigh)", upstreamModelId: "openai/gpt-5.6-luna" },
-    { id: "gpt-5.6-luna(max)", name: "GPT-5.6 Luna (Max)", upstreamModelId: "openai/gpt-5.6-luna" },
     { id: "muse-spark-1.3", name: "Muse Spark 1.3", upstreamModelId: "muse-spark-1.3-contributor", contextLength: 1000000 },
     { id: "muse-spark-1.3(minimal)", name: "Muse Spark 1.3 (Minimal)", upstreamModelId: "muse-spark-1.3-contributor", contextLength: 1000000 },
     { id: "muse-spark-1.3(low)", name: "Muse Spark 1.3 (Low)", upstreamModelId: "muse-spark-1.3-contributor", contextLength: 1000000 },
@@ -42,16 +43,7 @@ export default {
     { id: "muse-spark-1.3(high)", name: "Muse Spark 1.3 (High)", upstreamModelId: "muse-spark-1.3-contributor", contextLength: 1000000 },
     { id: "muse-spark-1.3(xhigh)", name: "Muse Spark 1.3 (XHigh)", upstreamModelId: "muse-spark-1.3-contributor", contextLength: 1000000 },
     { id: "deepseek-v4-flash", name: "DeepSeek V4 Flash", upstreamModelId: "deepseek/deepseek-v4-flash", thinking: true, vision: true, contextLength: 1000000 },
-    { id: "deepseek-v4-flash(none)", name: "DeepSeek V4 Flash (None)", upstreamModelId: "deepseek/deepseek-v4-flash", thinking: true },
-    { id: "deepseek-v4-flash(low)", name: "DeepSeek V4 Flash (Low)", upstreamModelId: "deepseek/deepseek-v4-flash", thinking: true },
-    { id: "deepseek-v4-flash(high)", name: "DeepSeek V4 Flash (High)", upstreamModelId: "deepseek/deepseek-v4-flash", thinking: true },
-    { id: "deepseek-v4-flash(max)", name: "DeepSeek V4 Flash (Max)", upstreamModelId: "deepseek/deepseek-v4-flash", thinking: true },
     { id: "mimo-v2.5", name: "MiMo V2.5", upstreamModelId: "mimo/mimo-v2.5", thinking: true, vision: true, contextLength: 1000000 },
-    { id: "mimo-v2.5(none)", name: "MiMo V2.5 (None)", upstreamModelId: "mimo/mimo-v2.5", thinking: true },
-    { id: "mimo-v2.5(low)", name: "MiMo V2.5 (Low)", upstreamModelId: "mimo/mimo-v2.5", thinking: true },
-    { id: "mimo-v2.5(medium)", name: "MiMo V2.5 (Medium)", upstreamModelId: "mimo/mimo-v2.5", thinking: true },
-    { id: "mimo-v2.5(high)", name: "MiMo V2.5 (High)", upstreamModelId: "mimo/mimo-v2.5", thinking: true },
-    { id: "mimo-v2.5(max)", name: "MiMo V2.5 (Max)", upstreamModelId: "mimo/mimo-v2.5", thinking: true },
     // Octane-ZAI self-hosted (GLM via akun Z.ai sendiri, 1M context)
     { id: "glm-5.3", name: "GLM 5.3", upstreamModelId: "glm-5.3", contextLength: 1000000 },
     { id: "glm-5.3-flash", name: "GLM 5.3 Flash", upstreamModelId: "glm-5.3-flash", thinking: true, vision: true, contextLength: 1000000 },

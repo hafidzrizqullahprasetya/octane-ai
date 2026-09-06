@@ -53,10 +53,10 @@ describe("OctaneExecutor glm-5.3 routing", () => {
   const mapBlock =
     mapStart === -1 ? "" : src.slice(mapStart, src.indexOf("};", mapStart) + 3);
 
-  it.each(["glm-5.3", "glm-5.3-flash"])("MODEL_PROVIDER_MAP routes %s to octane-zai", (model) => {
+  it.each(["glm-5.3", "glm-5.3-flash"])("MODEL_PROVIDER_MAP routes %s to freebuff", (model) => {
     const line = mapBlock.split("\n").find((l) => l.includes(`"${model}"`));
     expect(line).toBeDefined();
-    expect(line).toMatch(/octane-zai/);
+    expect(line).toMatch(/freebuff/);
   });
 });
 
