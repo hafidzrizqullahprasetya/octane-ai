@@ -106,11 +106,11 @@ function normalizeFreebuffModel(model) {
   const base = suffix ? model.slice(0, sufMatch.index).trim() : model;
 
   if (base === "muse-spark-1.3" || base === "meta/muse-spark-1.3" || base === "meta/muse-spark-1.3-contributor") return "meta/muse-spark-1.3-contributor";
-  if (base === "ox/ox-alpha" || base === "ox-alpha" || base === "stealth/ox-alpha") return "stealth/ox-alpha";
   if (base === "gpt-5.6-luna" || base === "openai/gpt-5.6-luna") return "openai/gpt-5.6-luna";
-  if (base === "kimi-k3" || base === "kimi-k3-eco" || base === "crof/kimi-k3" || base === "crof/kimi-k3-eco") return "crof/kimi-k3-eco";
   if (base === "deepseek-v4-flash" || base === "deepseek/deepseek-v4-flash") return "deepseek/deepseek-v4-flash";
-  if (base === "deepseek-v4-pro" || base === "deepseek/deepseek-v4-pro") return "deepseek/deepseek-v4-pro";
+  if (base === "mimo-v2.5" || base === "mimo/mimo-v2.5") return "mimo/mimo-v2.5";
+  if (base === "glm-5.3-flash" || base === "z-ai/glm-5.3-flash") return "z-ai/glm-5.3-flash";
+  if (base === "solar-pro4" || base === "upstage/solar-pro4") return "upstage/solar-pro4";
   return base;
 }
 
@@ -118,31 +118,57 @@ function normalizeFreebuffModel(model) {
 // FREEBUFF_CLI_BASE3_AGENT_ID_BY_MODEL — the CLI harness moved from base2 to
 // base3, and the backend can return 404 "No endpoints found" for the old
 // base2 roots during the transition).
+//
+// Multimodal per CLI freebuff/common/src/constants/freebuff-models.ts
+// (`multimodal` flag per model):
+//   vision native : gpt-5.6-luna, glm-5.3-flash (image+video in), mimo-v2.5
+//   text-only     : deepseek-v4-flash, solar-pro4, muse-spark-1.3
+// (Muse images are backend-described at the completions layer, not native
+// vision — so no client-side strip; the stripping for truly text-only models
+// happens in chatCore via capabilities.js, not here.)
+// Context windows (CLI FREEBUFF_MODEL_CONTEXT_WINDOWS, measured from real
+// provider rejections; dashboard display is forced to 1M by the capabilities
+// BYPASS anyway): luna 1M, deepseek-flash 1048576, mimo 1M, glm-flash 1M
+// (131072 max output), solar 500k, muse-spark 1M.
+const FREEBUFF_VISION_MODELS = new Set([
+  "openai/gpt-5.6-luna",
+  "gpt-5.6-luna",
+  "mimo/mimo-v2.5",
+  "mimo-v2.5",
+  "z-ai/glm-5.3-flash",
+  "glm-5.3-flash",
+]);
+const FREEBUFF_MODEL_CONTEXT_WINDOWS = {
+  "openai/gpt-5.6-luna": 1000000,
+  "gpt-5.6-luna": 1000000,
+  "deepseek/deepseek-v4-flash": 1048576,
+  "deepseek-v4-flash": 1048576,
+  "mimo/mimo-v2.5": 1000000,
+  "mimo-v2.5": 1000000,
+  "z-ai/glm-5.3-flash": 1000000,
+  "glm-5.3-flash": 1000000,
+  "upstage/solar-pro4": 500000,
+  "solar-pro4": 500000,
+  "meta/muse-spark-1.3-contributor": 1000000,
+  "meta/muse-spark-1.3": 1000000,
+  "muse-spark-1.3-contributor": 1000000,
+  "muse-spark-1.3": 1000000,
+};
 const FREE_ROOT_AGENT_BY_MODEL = {
   "deepseek/deepseek-v4-flash": "base3-free-deepseek-flash",
   "deepseek-v4-flash": "base3-free-deepseek-flash",
-  "deepseek/deepseek-v4-pro": "base3-free-deepseek",
-  "deepseek-v4-pro": "base3-free-deepseek",
   "mimo/mimo-v2.5": "base3-free-mimo",
   "mimo-v2.5": "base3-free-mimo",
-  "minimax/minimax-m3": "base3-free-minimax-m3",
-  "minimax-m3": "base3-free-minimax-m3",
   "openai/gpt-5.6-luna": "base3-free-luna",
   "gpt-5.6-luna": "base3-free-luna",
-  "openai/gpt-5.6-luna-es": "base3-free-luna-es",
-  "crof/kimi-k3-eco": "base3-free-kimi-k3-eco",
-  "kimi-k3-eco": "base3-free-kimi-k3-eco",
-  "crof/kimi-k3": "base3-free-kimi-k3-eco",
-  "kimi-k3": "base3-free-kimi-k3-eco",
-  "meta/muse-spark-1.3-contributor": "base3-free-muse-spark",
-  "meta/muse-spark-1.3": "base3-free-muse-spark",
-  "muse-spark-1.3-contributor": "base3-free-muse-spark",
-  "muse-spark-1.3": "base3-free-muse-spark",
-  "z-ai/glm-5.2": "base3-free-glm",
-  "anthropic/claude-fable-5": "base3-free-fable",
-  "ox/ox-alpha": "base3-free-ox-alpha",
-  "ox-alpha": "base3-free-ox-alpha",
-  "stealth/ox-alpha": "base3-free-ox-alpha",
+  "z-ai/glm-5.3-flash": "base3-free-glm-5-3-flash",
+  "glm-5.3-flash": "base3-free-glm-5-3-flash",
+  "upstage/solar-pro4": "base3-free-solar-pro4",
+  "solar-pro4": "base3-free-solar-pro4",
+  "meta/muse-spark-1.3-contributor": "base3-free-muse-spark-1-3",
+  "meta/muse-spark-1.3": "base3-free-muse-spark-1-3",
+  "muse-spark-1.3-contributor": "base3-free-muse-spark-1-3",
+  "muse-spark-1.3": "base3-free-muse-spark-1-3",
 };
 
 // Per-token+model session cache (in-memory; keyed so multi-account setups
@@ -263,7 +289,13 @@ function sessionCacheKey(token, model) {
 }
 
 function rootAgentIdForModel(model) {
-  return FREE_ROOT_AGENT_BY_MODEL[model] || "base2-free";
+  const agentId = FREE_ROOT_AGENT_BY_MODEL[model];
+  if (!agentId) {
+    const err = new Error(`Freebuff: model "${model}" is not in the allowed list (glm-5.3-flash, deepseek-v4-flash, gpt-5.6-luna, mimo-v2.5, solar-pro4, muse-spark-1.3).`);
+    err.status = 400;
+    throw err;
+  }
+  return agentId;
 }
 
 // Retry transient network errors (ECONNRESET, TLS reset, …) on the session/
@@ -761,6 +793,8 @@ export const __test__ = {
   fetchWithNetworkRetry,
   FREEBUFF_SYSTEM_MARKER,
   SESSION_STALE_CODES,
+  FREEBUFF_VISION_MODELS,
+  FREEBUFF_MODEL_CONTEXT_WINDOWS,
 };
 
 export default FreebuffExecutor;
