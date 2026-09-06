@@ -79,7 +79,12 @@ export const DEFAULT_RETRY_CONFIG = {
   429: { attempts: 0, delayMs: 0 },
   502: { attempts: 3, delayMs: 3000 },
   503: { attempts: 3, delayMs: 2000 },
-  504: { attempts: 2, delayMs: 3000 }
+  504: { attempts: 2, delayMs: 3000 },
+  // Cloudflare "origin timeout" — heavy reasoning turns (e.g. muse-spark
+  // xhigh) can exceed the CF origin window before headers arrive. Retrying
+  // once after a short pause lets a lighter retry land; the turn state is
+  // unchanged, so the retry is safe.
+  524: { attempts: 1, delayMs: 2000 }
 };
 
 // Normalize a retry entry to { attempts, delayMs }

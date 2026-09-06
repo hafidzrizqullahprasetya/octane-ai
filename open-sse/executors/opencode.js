@@ -4,6 +4,7 @@ import { PROVIDERS } from "../config/providers.js";
 import { getThinkingLevels } from "../providers/thinkingLevels.js";
 import { injectReasoningContent } from "../utils/reasoningContentInjector.js";
 import { resolveSessionId } from "../utils/sessionManager.js";
+import { DEFAULT_RETRY_CONFIG, resolveRetryEntry } from "../config/runtimeConfig.js";
 
 const OPENCODE_UA = "opencode";
 // Models served by /zen/v1/responses; every other model stays on /chat/completions.
@@ -165,15 +166,31 @@ export class OpenCodeExecutor extends BaseExecutor {
       const url = this.buildUrl(model);
       const transformedBody = this.transformRequest(model, body, stream, credentials);
       const headers = this.buildHeaders(credentials, true);
+      const bodyStr = JSON.stringify(transformedBody);
+      const retryConfig = { ...DEFAULT_RETRY_CONFIG, ...this.config.retry };
 
       log?.debug?.("OPENCODE", `Routing ${model} to /responses`);
 
-      const response = await proxyAwareFetch(url, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(transformedBody),
-        signal,
-      }, proxyOptions);
+      // The /responses branch fetches once (no BaseExecutor loop), so transient
+      // statuses (Cloudflare 524 on long reasoning turns, 502/503/504) must be
+      // retried here — same semantics as BaseExecutor's executeWithRetry.
+      let response;
+      for (let attempt = 0; ; attempt++) {
+        response = await proxyAwareFetch(url, {
+          method: "POST",
+          headers,
+          body: bodyStr,
+          signal,
+        }, proxyOptions);
+
+        const entry = resolveRetryEntry(retryConfig[response.status]);
+        if (entry && attempt < entry.attempts) {
+          log?.debug?.("RETRY", `${response.status} on ${url}, retry ${attempt + 1}/${entry.attempts} after ${entry.delayMs / 1000}s`);
+          await new Promise((resolve) => setTimeout(resolve, entry.delayMs));
+          continue;
+        }
+        break;
+      }
 
       if (!response.ok || !response.body) {
         return { response, url, headers, transformedBody };
