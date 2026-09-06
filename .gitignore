@@ -94,5 +94,5 @@ __pycache__/
 *.png
 *.html
 *.har
-.venv/.worktrees/
-data-octanezai/
+.venv/
+.worktrees/
