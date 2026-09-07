@@ -94,7 +94,11 @@ describe("getUsageForProvider(freebuff)", () => {
         status: "active",
         accessTier: "full",
         instanceId: "inst-1",
-        model: "deepseek/deepseek-v4-pro",
+        // Fixture note: originally "deepseek/deepseek-v4-pro" (displayName
+        // "DeepSeek V4 Pro"). That model was removed from the freebuff
+        // registry in 2e62463d (2026-08-21, "focus on Luna, Flash, and MiMo"),
+        // so no label can ever resolve for it — switched to a live model.
+        model: "z-ai/glm-5.3-flash",
         expiresAt: new Date(Date.now() + 3600000).toISOString(),
         rateLimit: {
           limit: 6,
@@ -112,10 +116,10 @@ describe("getUsageForProvider(freebuff)", () => {
     });
 
     expect(usage.plan).toBe("Freebuff");
-    expect(usage.quotas["deepseek/deepseek-v4-pro"]).toMatchObject({
+    expect(usage.quotas["z-ai/glm-5.3-flash"]).toMatchObject({
       used: 2.4,
       total: 6,
-      displayName: "DeepSeek V4 Pro",
+      displayName: "GLM-5.3 Flash",
     });
   });
 

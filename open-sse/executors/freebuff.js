@@ -370,14 +370,20 @@ const fbState = (globalThis[FB_STATE_KEY] ??= {
   inflight: new Map(),          // dedupe concurrent claims for the same key
   modelLockCooldowns: new Map(), // `${token}::${model}` -> expiresAt (ms)
   poolLimitCooldowns: new Map(), // `${proxyKey}::${model}` -> expiresAt (ms)
+  rateLimitCooldowns: new Map(), // `${token}::${model}` -> expiresAt (ms) — daily session quota exhausted
 });
 const sessionCache = fbState.sessionCache;
 const inflight = fbState.inflight;
 const modelLockCooldowns = fbState.modelLockCooldowns;
 const poolLimitCooldowns = fbState.poolLimitCooldowns;
+const rateLimitCooldowns = fbState.rateLimitCooldowns;
 
 const MODEL_LOCK_COOLDOWN_MS = 30 * 1000; // session bound to another model — short retry window of 30s
 const POOL_LIMITED_COOLDOWN_MS = 5 * 60 * 1000; // IP tier refuses this model — try a different pool/relay
+// Daily session quota (limit:25 / pacific_day) is account-scoped and only
+// clears at the server's window reset — retrying sooner is guaranteed 429.
+// 6h fallback when the 429 body carries no parsable resetAt.
+const RATE_LIMIT_FALLBACK_COOLDOWN_MS = 6 * 60 * 60 * 1000;
 
 // Cooldown maps need pruning: expired entries are cleared on write (sweep) and
 // on read, so long-running servers don't accumulate one entry per (account,model)
@@ -410,15 +416,22 @@ function sessionGateFromText(text) {
   return classifySessionGate(parsed.error || parsed.error_type || parsed.status || "", parsed.message || "", parsed.currentModel || null);
 }
 
-// Parse a 409/428/410 body into { kind, currentModel }. `msg` may be a whole
-// error string containing a JSON tail (requestSession errors embed the body).
+// Parse a 409/428/410/429 body into { kind, currentModel, resetAt }. `msg` may
+// be a whole error string containing a JSON tail (requestSession errors embed
+// the body).
 function sessionGateFromError(error) {
   const msg = String(error?.message || "");
   const start = msg.indexOf("{");
   if (start < 0) return null;
   try {
     const parsed = JSON.parse(msg.slice(start));
-    return classifySessionGate(parsed.error || parsed.error_type || parsed.status || "", parsed.message || "", parsed.currentModel || null);
+    const gate = classifySessionGate(parsed.error || parsed.error_type || parsed.status || "", parsed.message || "", parsed.currentModel || null);
+    // Rate-limit bodies carry the window reset — keep it for the cooldown.
+    if (gate.kind === "rate_limited" && parsed.resetAt) {
+      const t = Date.parse(parsed.resetAt);
+      if (Number.isFinite(t)) gate.resetAt = t;
+    }
+    return gate;
   } catch {
     return null;
   }
@@ -427,6 +440,7 @@ function sessionGateFromError(error) {
 function classifySessionGate(code, message, currentModel) {
   if (code === "session_superseded") return { kind: "superseded" };
   if (code === "model_locked") return { kind: "model_locked", currentModel };
+  if (code === "rate_limited") return { kind: "rate_limited" };
   // session_model_mismatch with the limited-tier message is an IP-tier refusal;
   // without it (or unknown) treat it as a model lock so we don't reclaim in a loop.
   if (code === "session_model_mismatch") {
@@ -464,6 +478,21 @@ function throwSessionGateError(gate, { token, model, proxyKey, poolId, log }) {
     err.status = 409;
     err.poolScoped = { poolId, scope, reason: "limited_ip" };
     log?.warn?.("AUTH", `Freebuff limited-IP refused ${model} (proxy=${proxyKey.slice(0, 40)}…) — cooldown ${POOL_LIMITED_COOLDOWN_MS / 60000}min`);
+    throw err;
+  }
+  if (gate.kind === "rate_limited") {
+    // Account-scoped daily quota exhausted (e.g. limit:25/pacific_day) — no
+    // point re-claiming sessions or re-registering runs until the window
+    // resets. Prefer the server-provided resetAt; fall back to a fixed window.
+    const until = gate.resetAt || Date.now() + RATE_LIMIT_FALLBACK_COOLDOWN_MS;
+    setCooldown(rateLimitCooldowns, `${token}::${model}`, until);
+    const err = new Error(
+      `Freebuff session quota exhausted for ${model} — cooldown until ${new Date(until).toLocaleTimeString()} (daily window reset).`,
+    );
+    err.status = 429;
+    err.resetsAtMs = until;
+    err.accountScoped = { reason: "rate_limited" };
+    log?.warn?.("AUTH", `Freebuff rate_limited ${model} — account cooldown until ${new Date(until).toLocaleTimeString()}`);
     throw err;
   }
 }
@@ -551,7 +580,11 @@ async function requestSession(token, model, proxyOptions, hasRetriedUnlock = fal
   }
 
   if (!response.ok) {
-    const err = new Error(`Freebuff session request failed: ${response.status} ${JSON.stringify(data).slice(0, 200)}`);
+    // 429 rate_limited must stay fully parsable downstream —
+    // sessionGateFromError extracts the gate kind + resetAt from this JSON
+    // tail to arm the account cooldown. Other statuses keep the short slice.
+    const bodyJson = response.status === 429 ? JSON.stringify(data) : JSON.stringify(data).slice(0, 200);
+    const err = new Error(`Freebuff session request failed: ${response.status} ${bodyJson}`);
     err.status = response.status;
     throw err;
   }
@@ -679,6 +712,7 @@ export function sessionStateSize() {
     inflight: inflight.size,
     modelLocks: modelLockCooldowns.size,
     poolLimits: poolLimitCooldowns.size,
+    rateLimits: rateLimitCooldowns.size,
   };
 }
 
@@ -702,6 +736,12 @@ export function pruneSessionState(now = Date.now()) {
   for (const [key, until] of poolLimitCooldowns) {
     if (until <= now) {
       poolLimitCooldowns.delete(key);
+      removed += 1;
+    }
+  }
+  for (const [key, until] of rateLimitCooldowns) {
+    if (until <= now) {
+      rateLimitCooldowns.delete(key);
       removed += 1;
     }
   }
@@ -801,6 +841,14 @@ export class FreebuffExecutor extends BaseExecutor {
       const err = new Error(`Freebuff limited-mode IP rejected ${model} — retry with a full-access proxy after ${new Date(poolUntil).toLocaleTimeString()}`);
       err.status = 409;
       err.poolScoped = { poolId, scope, reason: "limited_ip" };
+      throw err;
+    }
+    const rateLimitUntil = getCooldown(rateLimitCooldowns, `${token}::${model}`);
+    if (rateLimitUntil) {
+      const err = new Error(`Freebuff session quota exhausted for ${model} — retry after ${new Date(rateLimitUntil).toLocaleTimeString()} (daily window reset).`);
+      err.status = 429;
+      err.resetsAtMs = rateLimitUntil;
+      err.accountScoped = { reason: "rate_limited" };
       throw err;
     }
 
@@ -951,6 +999,7 @@ export class FreebuffExecutor extends BaseExecutor {
       if (response.ok) {
         modelLockCooldowns.delete(`${token}::${model}`);
         poolLimitCooldowns.delete(`${proxyKey}::${model}`);
+        rateLimitCooldowns.delete(`${token}::${model}`);
         if (poolId) clearPoolUnfit(poolId, scope);
       }
 
@@ -1014,6 +1063,8 @@ export const __test__ = {
   stripEndTurnFromChatMessage,
   stripEndTurnJsonResponse,
   stripEndTurnStream,
+  sessionGateFromError,
+  classifySessionGate,
 };
 
 export default FreebuffExecutor;

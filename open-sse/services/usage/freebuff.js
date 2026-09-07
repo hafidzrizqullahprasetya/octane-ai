@@ -21,10 +21,22 @@ import REGISTRY from "../../providers/registry/index.js";
 import { U, fetchWithTimeout } from "./shared.js";
 
 // Friendly labels from the registry model list (mirrors the CLI picker).
+// rateLimitsByModel keys are UPSTREAM ids ("vendor/model") while registry
+// entries carry bare octane ids ("deepseek-v4-flash") — index BOTH shapes
+// (plus suffixed variants) so displayName survives registry allowlist
+// reshuffles (the v0.5.69 6-model allowlist silently dropped it).
 const freebuffRegistry = REGISTRY.find((r) => r.id === "freebuff") || {};
-const MODEL_LABELS = Object.fromEntries(
-  (freebuffRegistry.models || []).map((m) => [m.id, m.name]),
-);
+const MODEL_LABELS = (() => {
+  const labels = {};
+  for (const m of freebuffRegistry.models || []) {
+    if (m?.id && m?.name) labels[m.id] = m.name;
+    const bare = String(m?.id || "").split("(")[0].trim();
+    if (bare && !labels[bare]) labels[bare] = m.name;
+    const upstream = String(m?.upstreamModelId || "").trim();
+    if (upstream && !labels[upstream]) labels[upstream] = m.name;
+  }
+  return labels;
+})();
 
 function sessionUrl() {
   return U("freebuff").url;
