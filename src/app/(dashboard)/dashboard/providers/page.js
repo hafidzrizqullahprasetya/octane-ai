@@ -25,7 +25,6 @@ import { useNotificationStore } from "@/store/notificationStore";
 import { useHeaderSearchStore } from "@/store/headerSearchStore";
 import ModelAvailabilityBadge from "./components/ModelAvailabilityBadge";
 import AddCompatibleModal from "./components/AddCompatibleModal";
-import OctaneOrderCard from "./components/OctaneOrderCard";
 import { STATUS_FILTER_OPTIONS, matchesStatusFilter } from "./utils";
 
 function getStatusDisplay(connected, error, errorCode) {
@@ -412,9 +411,6 @@ export default function ProvidersPage() {
           </p>
         </div>
       )}
-
-      {/* Octane AI — Unified ot/ Provider */}
-      <OctaneOrderCard />
 
       {/* Custom Providers (OpenAI/Anthropic Compatible) — dynamic */}
       <div className="flex flex-col gap-4">
