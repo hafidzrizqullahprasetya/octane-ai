@@ -1,4 +1,5 @@
 import { DefaultExecutor } from "./default.js";
+import { parseCodebuddyError } from "./codebuddyError.js";
 
 /**
  * CodeBuddyIntlExecutor — talks to https://www.codebuddy.ai/v2/chat/completions
@@ -11,6 +12,12 @@ import { DefaultExecutor } from "./default.js";
 export class CodeBuddyIntlExecutor extends DefaultExecutor {
   constructor() {
     super("codebuddy-intl");
+  }
+
+  parseError(response, bodyText) {
+    // 6004 frequency-limit (real reset time) + 14018 credits-exhausted (long
+    // lock). Falls back to generic parsing for anything else.
+    return parseCodebuddyError(response, bodyText) || super.parseError(response, bodyText);
   }
 
   transformRequest(model, body, stream, credentials) {

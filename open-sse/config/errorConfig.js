@@ -63,7 +63,13 @@ export const ERROR_RULES = [
   { text: "improperly formed request", cooldownMs: COOLDOWN.long },
   { text: "rate limit",               backoff: true },
   { text: "too many requests",        backoff: true },
+  { text: "frequency limit",          backoff: true },
+  { text: "usage exceeds",            backoff: true },
   { text: "quota exceeded",           backoff: true },
+  // Top-up-required (e.g. CodeBuddy 14018): no point retrying every few
+  // seconds — lock long immediately. Mirrors MAX_RATE_LIMIT_COOLDOWN_MS.
+  { text: "credits exhausted",        cooldownMs: 30 * 60 * 1000 },
+  { text: "insufficient credits",     cooldownMs: 30 * 60 * 1000 },
   { text: "capacity",                 backoff: true },
   { text: "overloaded",               backoff: true },
 

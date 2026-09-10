@@ -1,6 +1,6 @@
 import { getProviderConnections, validateApiKey, updateProviderConnection, getSettings, getProxyPools } from "@/lib/localDb";
 import { resolveConnectionProxyConfig, pickProxyPoolId } from "@/lib/network/connectionProxy";
-import { formatRetryAfter, checkFallbackError, isModelLockActive, buildModelLockUpdate, getEarliestModelLockUntil } from "open-sse/services/accountFallback.js";
+import { formatRetryAfter, checkFallbackError, isModelLockActive, buildModelLockUpdate, getModelLockKey, MODEL_LOCK_ALL } from "open-sse/services/accountFallback.js";
 import { MAX_RATE_LIMIT_COOLDOWN_MS } from "open-sse/config/errorConfig.js";
 import { resolveProviderId, FREE_PROVIDERS } from "@/shared/constants/providers.js";
 import { getAntigravityQuotaCache } from "./antigravityQuota.js";
@@ -51,6 +51,27 @@ export function filterConnectionsForModel(providerId, connections, model, settin
 }
 
 const GITHUB_MONTHLY_USAGE_LIMIT = "you've reached your additional usage limit for your plan";
+
+/**
+ * Model-specific lock expiry for retry timing.
+ * Unlike getEarliestModelLockUntil() (min across ALL modelLock_* keys),
+ * this reads only modelLock_${model} / modelLock___all so "reset after"
+ * reflects the requested model, not some other model's lock.
+ * @returns {string|null} ISO timestamp, or null when no active lock.
+ */
+function getModelSpecificLockUntil(connection, model) {
+  if (!connection) return null;
+  const now = Date.now();
+  const candidates = [connection[getModelLockKey(model)], connection[MODEL_LOCK_ALL]];
+  let earliest = null;
+  for (const val of candidates) {
+    if (!val) continue;
+    const t = new Date(val).getTime();
+    if (!Number.isFinite(t) || t <= now) continue;
+    if (!earliest || t < earliest) earliest = t;
+  }
+  return earliest ? new Date(earliest).toISOString() : null;
+}
 
 function githubMonthlyResetMs(status, errorText, provider) {
   if (resolveProviderId(provider) !== "github" || Number(status) !== 402) return null;
@@ -159,15 +180,17 @@ export async function getProviderCredentials(provider, excludeConnectionIds = nu
       const excluded = excludeSet.has(c.id);
       const locked = isModelLockActive(c, model);
       if (excluded || locked) {
-        const lockUntil = getEarliestModelLockUntil(c);
+        const lockUntil = getModelSpecificLockUntil(c, model);
         log.debug("AUTH", `  → ${c.id?.slice(0, 8)} | ${excluded ? "excluded" : ""} ${locked ? `modelLocked(${model}) until ${lockUntil}` : ""}`);
       }
     });
 
     if (availableConnections.length === 0) {
-      // Find earliest persistent lock or lazy Antigravity quota-cache reset for retry timing.
+      // Retry timing must be per-model: getEarliestModelLockUntil() returns the
+      // min across ALL modelLock_* keys, which can report another model's lock
+      // (too early → premature retry, or too late → wrong "reset after").
       const lockedConns = connections.filter(c => isModelLockActive(c, model));
-      const expiries = lockedConns.map(c => getEarliestModelLockUntil(c)).filter(Boolean);
+      const expiries = lockedConns.map(c => getModelSpecificLockUntil(c, model)).filter(Boolean);
       if (isAntigravity && model && antigravityQuotaCache) {
         connections.forEach((c) => {
           const resetAt = antigravityQuotaCache.get(c.id)?.[model]?.resetAt;
@@ -176,7 +199,9 @@ export async function getProviderCredentials(provider, excludeConnectionIds = nu
       }
       const earliest = expiries.sort()[0] || null;
       if (earliest) {
-        const earliestConn = lockedConns[0];
+        const earliestConn = [...lockedConns].sort((a, b) =>
+          String(getModelSpecificLockUntil(a, model) || "").localeCompare(String(getModelSpecificLockUntil(b, model) || ""))
+        )[0];
         log.warn("AUTH", `${provider} | all ${connections.length} accounts locked for ${model || "all"} (${formatRetryAfter(earliest)}) | lastError=${earliestConn?.lastError?.slice(0, 50)}`);
         return {
           allRateLimited: true,
