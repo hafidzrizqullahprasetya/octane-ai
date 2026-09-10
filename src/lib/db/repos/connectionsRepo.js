@@ -148,7 +148,25 @@ export async function createProviderConnection(data) {
     // access_token: never dedup — user manages duplicates manually
 
     if (existing) {
-      const merged = { ...existing, ...data, updatedAt: now };
+      // Re-auth (OAuth poll/exchange) returns providerSpecificData:{} from
+      // mapTokens — a wholesale replace would wipe UI-configured proxy
+      // (proxyPoolIds/proxyRotationStrategy) on every re-login. Deep-merge
+      // so fresh tokens apply but existing psd keys survive unless the
+      // incoming object explicitly overrides them.
+      const merged = {
+        ...existing,
+        ...data,
+        providerSpecificData: {
+          ...(existing.providerSpecificData || {}),
+          ...(data.providerSpecificData || {}),
+        },
+        updatedAt: now,
+      };
+      // Drop the key entirely when both sides are empty (matches create path
+      // + cleanupProviderConnections semantics).
+      if (Object.keys(merged.providerSpecificData).length === 0) {
+        delete merged.providerSpecificData;
+      }
       upsert(db, merged);
       result = merged;
       return;
