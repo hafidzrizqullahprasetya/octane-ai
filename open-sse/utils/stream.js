@@ -179,6 +179,14 @@ export function createSSEStream(options = {}) {
               }
 
               if (!hasValuableContent(parsed, FORMATS.OPENAI)) {
+                // Usage-only chunks (no choices/delta) carry no forwardable
+                // content, but their usage MUST be captured before skipping —
+                // otherwise streaming usage is lost (e.g. OpenAI-style
+                // terminal usage chunk) and finalize falls back to estimates.
+                const extractedSkip = extractUsage(parsed);
+                if (extractedSkip) {
+                  usage = mergeUsage(usage, extractedSkip);
+                }
                 continue;
               }
 

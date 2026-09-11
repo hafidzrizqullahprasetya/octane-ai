@@ -20,6 +20,7 @@ import { getGroqUsage } from "./usage/groq.js";
 import { getZedUsage } from "./usage/zed.js";
 import { getOctaneZaiUsage } from "./usage/octanezai.js";
 import { getExperientialLabsUsage } from "./usage/experientiallabs.js";
+import { getAlysisUsage } from "./usage/alysis.js";
 import { resolveQoderCredentials } from "./qoderModels.js";
 import { getGlmUsage } from "./usage/glm.js";
 import {
@@ -66,6 +67,7 @@ const USAGE_HANDLERS = {
   zed: (c) => getZedUsage(c.accessToken, c.providerSpecificData, c.proxyOptions),
   "octane-zai": (c) => getOctaneZaiUsage(c.accessToken, c.providerSpecificData, c.proxyOptions),
   experientiallabs: (c) => getExperientialLabsUsage(c.apiKey, c.providerSpecificData, c.proxyOptions),
+  alysis: (c) => getAlysisUsage(c.apiKey, c.providerSpecificData, c.proxyOptions),
 };
 
 export async function getUsageForProvider(connection, proxyOptions = null, options = {}) {

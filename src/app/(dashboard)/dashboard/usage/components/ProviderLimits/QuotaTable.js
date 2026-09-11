@@ -151,7 +151,10 @@ export default function QuotaTable({
       <div className="space-y-px">
         {currentPageRows.map((quota) => {
           const isUnlimited = quota.unlimited === true;
-          const colors = getColorClasses(quota.remaining);
+          // Unlimited metering: neutral display — never red (no cap to exhaust).
+          const colors = isUnlimited
+            ? { text: "text-sky-500", bg: "bg-sky-500", bgLight: "bg-sky-500/10", emoji: "♾️" }
+            : getColorClasses(quota.remaining);
           const countdown = formatResetTime(quota.resetAt);
           const resetDisplay = formatResetTimeDisplay(quota.resetAt);
           // recurring defaults true: a missing flag means the quota

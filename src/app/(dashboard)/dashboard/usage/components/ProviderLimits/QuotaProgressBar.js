@@ -72,7 +72,15 @@ export default function QuotaProgressBar({
   resetTime = null,
   recurring = true,
 }) {
-  const colors = getColorClasses(percentage);
+  // Unlimited metering (no cap): neutral display — never red 0%.
+  const colors = unlimited
+    ? {
+        text: "text-sky-500",
+        bg: "bg-sky-500",
+        bgLight: "bg-sky-500/10",
+        emoji: "♾️",
+      }
+    : getColorClasses(percentage);
   const countdown = formatResetTime(resetTime);
   const resetDisplay = formatResetTimeDisplay(resetTime);
 
@@ -93,7 +101,7 @@ export default function QuotaProgressBar({
         <div className="flex items-center gap-1.5">
           <span className="text-xs">{colors.emoji}</span>
           <span className={cn("font-medium", colors.text)}>
-            {remaining}%
+            {unlimited ? "∞" : `${remaining}%`}
           </span>
         </div>
       </div>

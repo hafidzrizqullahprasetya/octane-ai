@@ -623,6 +623,20 @@ async function testApiKeyConnection(connection, effectiveProxy = null) {
         const valid = res.status !== 401 && res.status !== 403;
         return { valid, error: valid ? null : "Invalid API key" };
       }
+      case "alysis": {
+        // Alysis Code gateway (Supabase functions, OpenAI-compatible).
+        // Minimal chat ping — triggers fast 400/200 without real usage;
+        // only 401/403 means the slk_ key is bad.
+        const alysisBase = PROVIDERS["alysis"]?.baseUrl
+          || "https://vzigujbcjjmpntxhmyvr.supabase.co/functions/v1/llm/v1/chat/completions";
+        const res = await fetchWithConnectionProxy(alysisBase, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${connection.apiKey}`, "content-type": "application/json" },
+          body: JSON.stringify({ model: getDefaultModel(connection.provider), max_tokens: 1, messages: [{ role: "user", content: "test" }] }),
+        }, effectiveProxy);
+        const valid = res.status !== 401 && res.status !== 403;
+        return { valid, error: valid ? null : "Invalid API key" };
+      }
       case "alicode":
       case "alicode-intl":
       case "alims-intl": {
