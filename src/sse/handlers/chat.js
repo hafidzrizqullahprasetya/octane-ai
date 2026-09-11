@@ -258,7 +258,11 @@ async function handleSingleModelChat(body, modelStr, clientRawRequest = null, re
   // dalam hitungan detik (memperparah review) lalu langsung mengembalikan
   // error ke klien. Di sini kita MENUNGGU dan MENCOBA LAGI, sehingga klien
   // sering tidak pernah melihat 429 sama sekali.
-  const PROVIDER_RETRY = { alysis: { maxWaves: 6, baseDelayMs: 2000, maxDelayMs: 20000 } };
+  // Transient Alysis terbukti bisa berlangsung >1 menit (221 error / 7 sukses
+  // dalam 5 menit). 6 wave (~51s) tidak cukup — klien opencode menyerah setelah
+  // 503. Naikkan wave supaya router menahan lebih lama sampai transient lewat:
+  // 14 wave ≈ 2+3+5+8+13+20+20×8 ≈ 3.5 menit. Klien jarang melihat error.
+  const PROVIDER_RETRY = { alysis: { maxWaves: 14, baseDelayMs: 2000, maxDelayMs: 20000 } };
   const retryCfg = PROVIDER_RETRY[provider] || null;
   const isBillingTransient = (status, err) => {
     if (status !== 429 && status !== 503) return false;
