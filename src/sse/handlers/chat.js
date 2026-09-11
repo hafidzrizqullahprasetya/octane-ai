@@ -251,6 +251,23 @@ async function handleSingleModelChat(body, modelStr, clientRawRequest = null, re
   let lastError = null;
   let lastStatus = null;
 
+  // ─── Provider-level transient backoff ──────────────────────────────────────
+  // Episode billing Alysis bersifat TRANSIENT: 429/503 "cannot cover / billing
+  // review" memukul request yang sama di SEMUA akun selama beberapa detik–
+  // menit, lalu pulih sendiri. Tanpa backoff, loop fallback mem-burst 61 akun
+  // dalam hitungan detik (memperparah review) lalu langsung mengembalikan
+  // error ke klien. Di sini kita MENUNGGU dan MENCOBA LAGI, sehingga klien
+  // sering tidak pernah melihat 429 sama sekali.
+  const PROVIDER_RETRY = { alysis: { maxWaves: 6, baseDelayMs: 2000, maxDelayMs: 20000 } };
+  const retryCfg = PROVIDER_RETRY[provider] || null;
+  const isBillingTransient = (status, err) => {
+    if (status !== 429 && status !== 503) return false;
+    const e = String(err || "").toLowerCase();
+    return e.includes("billing") || e.includes("available credits cannot cover")
+      || e.includes("reconciliation is pending") || e.includes("reserved credits");
+  };
+  let wave = 0;
+
   while (true) {
     const credentials = await getProviderCredentials(provider, excludeConnectionIds, model);
 
@@ -265,6 +282,16 @@ async function handleSingleModelChat(body, modelStr, clientRawRequest = null, re
       if (excludeConnectionIds.size === 0) {
         log.warn("AUTH", `No active credentials for provider: ${provider}`);
         return errorResponse(HTTP_STATUS.NOT_FOUND, `No active credentials for provider: ${provider}`);
+      }
+      // Semua akun sudah dicoba untuk request ini. Kalau penyebabnya transient
+      // billing (alySIS), jangan langsung gagal — tunggu lalu coba wave baru.
+      if (retryCfg && isBillingTransient(lastStatus, lastError) && wave < retryCfg.maxWaves) {
+        wave++;
+        const delay = Math.min(retryCfg.baseDelayMs * Math.pow(1.6, wave - 1), retryCfg.maxDelayMs);
+        log.warn("CHAT", `${provider} | semua ${excludeConnectionIds.size} akun kena transient billing — wave ${wave}/${retryCfg.maxWaves}, tunggu ${Math.round(delay / 1000)}s lalu coba lagi`);
+        await new Promise((r) => setTimeout(r, delay));
+        excludeConnectionIds.clear();
+        continue;
       }
       log.warn("CHAT", "No more accounts available", { provider });
       return errorResponse(lastStatus || HTTP_STATUS.SERVICE_UNAVAILABLE, lastError || "All accounts unavailable");
@@ -369,6 +396,24 @@ async function handleSingleModelChat(body, modelStr, clientRawRequest = null, re
       excludeConnectionIds.add(credentials.connectionId);
       lastError = result.error;
       lastStatus = result.status;
+      // Circuit-breaker: kalau error transient billing yang SAMA beruntun di
+      // banyak akun, hentikan burst lebih awal — langsung backoff daripada
+      // mem-burst seluruh 61 akun (yang memperparah review Alysis).
+      if (retryCfg && isBillingTransient(result.status, result.error) && excludeConnectionIds.size >= 6) {
+        log.warn("CHAT", `${provider} | circuit-breaker: ${excludeConnectionIds.size} akun beruntun kena transient billing → stop burst, masuk backoff`);
+        excludeConnectionIds.clear(); // anggap "sudah coba semua" → memicu wave backoff
+        excludeConnectionIds.add("__circuit_breaker__"); // penanda agar tidak dianggap "no credentials"
+        // paksa kredensial null pada iterasi berikut dengan menandai habis:
+        // (kita langsung picu logika wave di sini agar tidak tergantung getProviderCredentials)
+        if (wave < retryCfg.maxWaves) {
+          wave++;
+          const delay = Math.min(retryCfg.baseDelayMs * Math.pow(1.6, wave - 1), retryCfg.maxDelayMs);
+          log.warn("CHAT", `${provider} | wave ${wave}/${retryCfg.maxWaves}, tunggu ${Math.round(delay / 1000)}s lalu coba lagi`);
+          await new Promise((r) => setTimeout(r, delay));
+          excludeConnectionIds.clear();
+        }
+        continue;
+      }
       continue;
     }
 

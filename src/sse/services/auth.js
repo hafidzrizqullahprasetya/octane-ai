@@ -474,6 +474,28 @@ export async function markAccountUnavailable(connectionId, status, errorText, pr
   // Fallback ke akun lain untuk request ini, tapi jangan tulis modelLock /
   // testStatus unavailable — kartu tetap hijau di dashboard.
   if (noLock) {
+    // Pengecualian billing-transient Alysis: 429 "cannot cover" / 503
+    // "billing review" menandakan akun sedang diperiksa / reservasi
+    // menggantung. Walaupun noLock (kartu tetap hijau), akun itu harus
+    // DIISTIRAHATKAN sebentar agar tidak di-burst lagi saat review berlangsung
+    // — inilah akar episode 429 massal. Pakai modelLock singkat (bukan
+    // testStatus unavailable) supaya otomatis pulih dan kartu tidak merah.
+    const lower = String(errorText || "").toLowerCase();
+    const isBillingTransient = (status === 429 || status === 503) &&
+      (lower.includes("billing") || lower.includes("available credits cannot cover")
+        || lower.includes("reconciliation is pending") || lower.includes("reserved credits"));
+    if (isBillingTransient && resolveProviderId(provider) === "alysis") {
+      const restMs = 10 * 60 * 1000; // istirahat 10 menit per akun
+      await updateProviderConnection(connectionId, {
+        ...buildModelLockUpdate(model, restMs),
+        lastError: typeof errorText === "string" ? errorText.slice(0, 100) : "billing review",
+        errorCode: status,
+        lastErrorAt: new Date().toISOString(),
+      });
+      const connName = conn?.displayName || conn?.name || conn?.email || connectionId.slice(0, 8);
+      log.info("AUTH", `${connName} billing-transient [${status}] — istirahat 10m (tidak di-lock permanen)`);
+      return { shouldFallback: true, cooldownMs: restMs };
+    }
     const connName = conn?.displayName || conn?.name || conn?.email || connectionId.slice(0, 8);
     log.info("AUTH", `${connName} soft-fallback [${status}] — akun sehat, tidak di-lock`);
     return { shouldFallback: true, cooldownMs: 0 };
