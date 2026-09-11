@@ -50,14 +50,22 @@ const COOLDOWN = {
 /**
  * Unified error classification rules.
  * Checked top-to-bottom: text rules first (by order), then status rules.
- * Each rule: { text?, status?, cooldownMs?, backoff? }
+ * Each rule: { text?, status?, cooldownMs?, backoff?, noFallback? }
  *   - text: substring match (case-insensitive) on error message
  *   - status: HTTP status code match
  *   - cooldownMs: fixed cooldown duration
  *   - backoff: true = use exponential backoff (rate limit)
+ *   - noFallback: true = deterministic client/request error — retrying another
+ *     account can never succeed, so don't lock the account and don't fallback.
+ *     The error is returned to the client immediately.
  */
 export const ERROR_RULES = [
-  // --- Text-based rules (checked first, order = priority) ---
+  // --- No-fallback rules: deterministic 400s (checked FIRST) ---
+  // Retrying these on another account is pointless and only burns all accounts.
+  { text: "oversized hosted request", noFallback: true },
+  { text: "8 mib maximum",            noFallback: true },
+  { text: "invalid or oversized",      noFallback: true },
+  // --- Text-based rules (checked after no-fallback, order = priority) ---
   { text: "no credentials",           cooldownMs: COOLDOWN.long },
   { text: "request not allowed",      cooldownMs: COOLDOWN.short },
   { text: "improperly formed request", cooldownMs: COOLDOWN.long },

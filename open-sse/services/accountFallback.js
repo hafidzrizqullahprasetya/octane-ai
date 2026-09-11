@@ -26,6 +26,15 @@ export function checkFallbackError(status, errorText, backoffLevel = 0) {
     : "";
 
   for (const rule of ERROR_RULES) {
+    // No-fallback rule: deterministic client/request error. Don't lock the
+    // account (cooldownMs 0) and don't try the next account — it would fail
+    // identically and only burn every account (e.g. alysis 400 oversized).
+    if (rule.noFallback) {
+      const hit = (rule.text && lowerError && lowerError.includes(rule.text))
+        || (rule.status && rule.status === status);
+      if (hit) return { shouldFallback: false, cooldownMs: 0 };
+      continue;
+    }
     // Text-based rule: match substring in error message
     if (rule.text && lowerError && lowerError.includes(rule.text)) {
       if (rule.backoff) {

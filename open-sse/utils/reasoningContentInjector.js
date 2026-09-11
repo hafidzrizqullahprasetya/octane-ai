@@ -72,5 +72,20 @@ export function injectReasoningContent({ provider, model, body }) {
   const modelRule = MODEL_RULES.find(r => r.match(model));
   const rule = providerRule || modelRule;
   const nextBody = applyDeepSeekV4ProAlias({ provider, model, body });
+  // Strict-schema hosts (quirk dropReasoningContent, e.g. alysis) reject the
+  // reasoning_content placeholder with a 400 on multi-turn sessions — never
+  // inject there, and strip any echoed-back copy from the history.
+  if (PROVIDERS[provider]?.quirks?.dropReasoningContent) {
+    return stripReasoningContentFields(nextBody);
+  }
   return applyRule(nextBody, rule);
+}
+
+// Remove reasoning_content from every assistant message (in-place).
+export function stripReasoningContentFields(body) {
+  if (!body?.messages) return body;
+  for (const msg of body.messages) {
+    if (msg?.role === "assistant" && "reasoning_content" in msg) delete msg.reasoning_content;
+  }
+  return body;
 }

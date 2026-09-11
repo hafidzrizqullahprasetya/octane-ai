@@ -23,6 +23,7 @@ import { dedupeTools } from "../utils/toolDeduper.js";
 import { injectCaveman } from "../rtk/caveman.js";
 import { injectPonytail } from "../rtk/ponytail.js";
 import { compressMessages, formatRtkLog } from "../rtk/index.js";
+import { enforceRequestSizeLimit, formatSizeGuardLog } from "../rtk/sizeGuard.js";
 import { compressWithHeadroom, formatHeadroomLog, formatHeadroomSizeLog, isHeadroomPhantomSavings } from "../rtk/headroom.js";
 import { compressWithPxpipe } from "../rtk/pxpipe.js";
 import { getCapabilitiesForModel } from "../providers/capabilities.js";
@@ -303,6 +304,15 @@ export async function handleChatCore({ body, modelInfo, credentials, log, onCred
 
   if (xf.length && log?.line) log.line(reqTag, "⚙", xf.join(" · "));
 
+  // Size guard: last line of defense against host request-size limits (e.g.
+  // alysis Supabase edge fn 400s >8 MiB with "Invalid or oversized hosted
+  // request"). Runs after every saver so it only trims genuinely oversized
+  // payloads — the trimmed request still answers, while an oversize 400 would
+  // burn through every account in the pool. Prod-safe by design.
+  const sizeGuardStats = enforceRequestSizeLimit(provider, translatedBody, log);
+  const sizeGuardLine = formatSizeGuardLog(sizeGuardStats);
+  if (sizeGuardLine) log?.info?.("SIZEGUARD", sizeGuardLine);
+
   // Pin cache breakpoints to the final body — every saver above can reshape
   // system/tools/messages, and a stale anchor costs a full prefix rewrite.
   if (passthrough && clientTool === "claude") anchorClaudeCache(translatedBody);
@@ -540,7 +550,11 @@ export async function handleChatCore({ body, modelInfo, credentials, log, onCred
     const errMsg = formatProviderError(new Error(message), provider, model, statusCode);
     if (log?.errorLine) {
       const urlStr = providerUrl ? `\n    URL: ${providerUrl}` : "";
-      log.errorLine(reqTag, "✗", `ERROR ${statusCode} · ${provider}/${model} · ${Date.now() - requestStartTime}ms${urlStr}\n    ${errMsg}`);
+      // Outbound size on the error line: distinguishes a real size-limit 400
+      // from a schema/content 400 ("oversized" hosts lie about the reason).
+      let sizeStr = "";
+      try { sizeStr = `\n    OUTBOUND: ${(Buffer.byteLength(JSON.stringify(finalBody || translatedBody || {}), "utf8") / 1024 / 1024).toFixed(2)}MiB`; } catch { /* never mask the error */ }
+      log.errorLine(reqTag, "✗", `ERROR ${statusCode} · ${provider}/${model} · ${Date.now() - requestStartTime}ms${urlStr}${sizeStr}\n    ${errMsg}`);
     }
     reqLogger.logError(new Error(message), finalBody || translatedBody);
     return createErrorResult(statusCode, errMsg, resetsAtMs);

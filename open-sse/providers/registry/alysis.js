@@ -22,6 +22,13 @@ export default {
   transport: {
     baseUrl: "https://vzigujbcjjmpntxhmyvr.supabase.co/functions/v1/llm/v1/chat/completions",
     format: "openai",
+    quirks: {
+      // Host runs a strict request schema (Supabase edge fn): unknown message
+      // fields like the DeepSeek-style `reasoning_content` placeholder are
+      // rejected with 400 "Invalid or oversized hosted request" on multi-turn
+      // sessions (every assistant message carries it). Strip them.
+      dropReasoningContent: true,
+    },
   },
   models: [
     { id: "deepseek-v4-flash", name: "DeepSeek V4 Flash" },
