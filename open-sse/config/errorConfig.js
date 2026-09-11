@@ -69,6 +69,11 @@ export const ERROR_RULES = [
   { text: "no credentials",           cooldownMs: COOLDOWN.long },
   { text: "request not allowed",      cooldownMs: COOLDOWN.short },
   { text: "improperly formed request", cooldownMs: COOLDOWN.long },
+  // Alysis 502: upstream (DeepSeek host di balik edge fn) sesekali menolak dan
+  // menyuruh retry — akunnya sendiri sehat (akun lain di IP sama lolos, dan
+  // akun yang sama sukses di request berikutnya). Soft fallback: pindah akun
+  // untuk request ini saja, TANPA lock / testStatus unavailable.
+  { text: "upstream rejected the request", noLock: true },
   { text: "rate limit",               backoff: true },
   { text: "too many requests",        backoff: true },
   { text: "frequency limit",          backoff: true },
