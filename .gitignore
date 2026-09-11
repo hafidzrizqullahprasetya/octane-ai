@@ -96,3 +96,7 @@ __pycache__/
 *.har
 .venv/
 .worktrees/
+
+# Local tools (not part of repo)
+Boterdrop-Solver/
+github-regkit-mibp/
