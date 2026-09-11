@@ -83,6 +83,19 @@ export const ERROR_RULES = [
   // seconds — lock long immediately. Mirrors MAX_RATE_LIMIT_COOLDOWN_MS.
   { text: "credits exhausted",        cooldownMs: 30 * 60 * 1000 },
   { text: "insufficient credits",     cooldownMs: 30 * 60 * 1000 },
+  // Alysis billing-hold states: "Available credits cannot cover this request"
+  // / "Hosted billing requires review" / "Usage reconciliation is pending".
+  // Ini BUKAN rate-limit per menit — akun sedang di-hold reservasi/billing
+  // di sisi gateway. Kalau cuma di-lock 2 detik lalu langsung di-burst ke
+  // akun berikutnya, semua akun ikut di-flag. Lock panjang supaya akun yang
+  // di-hold tidak terus-terusan dipukul (memperparah review).
+  { text: "available credits cannot cover", cooldownMs: 30 * 60 * 1000, noLock: true },
+  { text: "credits cannot cover this request", cooldownMs: 30 * 60 * 1000, noLock: true },
+  { text: "billing review",             cooldownMs: 30 * 60 * 1000, noLock: true },
+  { text: "hosted billing",             cooldownMs: 30 * 60 * 1000, noLock: true },
+  { text: "reconciliation is pending",  cooldownMs: 10 * 60 * 1000, noLock: true },
+  { text: "reserved credits remain held", cooldownMs: 10 * 60 * 1000, noLock: true },
+  { text: "billing_pending",            cooldownMs: 10 * 60 * 1000, noLock: true },
   { text: "capacity",                 backoff: true },
   { text: "overloaded",               backoff: true },
 

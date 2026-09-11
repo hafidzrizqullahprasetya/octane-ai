@@ -6,6 +6,8 @@ import {
   clearAccountError,
   extractApiKey,
   isValidApiKey,
+  estimateRequestCredits,
+  getQuotaSafetyConfig,
 } from "../services/auth.js";
 import { handleAntigravityQuotaError, clearAntigravityStrikes } from "../services/antigravityQuota.js";
 import { getSettings } from "@/lib/localDb";
@@ -220,6 +222,24 @@ async function handleSingleModelChat(body, modelStr, clientRawRequest = null, re
   }
 
   const { provider, model } = modelInfo;
+
+  // Pre-send cost guard: tolak request yang estimasi biayanya melampaui batas
+  // aman provider (alySIS). Jauh lebih baik menolak lokal daripada mengirim
+  // lalu kena 429 "Available credits cannot cover" — reservasi gagal itulah
+  // yang menumpuk dan memicu billing-review massal.
+  {
+    const qs = getQuotaSafetyConfig(provider);
+    if (qs?.maxEstCreditsPerRequest) {
+      const est = estimateRequestCredits(provider, body);
+      if (est > qs.maxEstCreditsPerRequest) {
+        log.warn("QUOTA_GUARD", `${provider}/${model} | estimated ${est.toFixed(2)}cr > ${qs.maxEstCreditsPerRequest}cr/request — menolak lokal, kecilkan konteks`);
+        return errorResponse(
+          HTTP_STATUS.BAD_REQUEST,
+          `[${provider}/${model}] Request terlalu besar untuk paket gratis (estimasi ~${est.toFixed(1)} credits, batas aman ${qs.maxEstCreditsPerRequest}). Kecilkan konteks / kompres history / potong input, lalu coba lagi.`
+        );
+      }
+    }
+  }
 
   // Routing shown in the unified "▶" line (client model → provider/model)
 

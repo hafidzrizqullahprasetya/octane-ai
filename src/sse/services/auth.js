@@ -9,6 +9,106 @@ import * as log from "../utils/logger.js";
 // Mutex to prevent race conditions during account selection
 let selectionMutex = Promise.resolve();
 
+// ─── Per-provider retry pacing ───────────────────────────────────────────────
+// Beberapa provider (alySIS free-harvest) menghitung reservasi kredit per
+// request. Burst fallback — gagal 429 lalu dalam milidetik langsung memukul
+// akun berikutnya — membuat reservasi menumpuk dan memicu billing-review /
+// "available credits cannot cover" massal. Beri jeda kecil HANYA saat retry
+// (sudah ada akun yang gagal / di-exclude), bukan pada request pertama, supaya
+// latensi normal tidak ikut naik. Aman untuk provider lain (0 → no-op).
+const PROVIDER_PICK_GAP_MS = { alysis: 400 };
+const providerLastPickMs = new Map(); // providerId -> epoch ms
+async function paceProviderPick(providerId) {
+  const gap = PROVIDER_PICK_GAP_MS[providerId];
+  if (!gap) return;
+  const now = Date.now();
+  const last = providerLastPickMs.get(providerId) || 0;
+  const wait = gap - (now - last);
+  if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+  providerLastPickMs.set(providerId, Date.now());
+}
+
+// ─── Pre-send quota safety (root-cause 429/billing prevention) ───────────────
+// Alysis free-tier membatasi 25 credits/5h, 50 credits/30d dan MENOLAK dengan
+// 429 "Available credits cannot cover this request" saat estimasi biaya
+// request melebihi sisa (atau ada reservasi menggantung). Memukul akun yang
+// sudah mau habis inilah yang memicu billing-review. Alih-alih menunggu 429,
+// kita hitung burn lokal dari usageHistory (rate flash: 25/1M miss · 0.8/1M
+// hit · 75/1M out) dan SKIP akun yang sudah mendekati cap — jadi request tidak
+// pernah dikirim ke akun yang pasti ditolak. Ini mencegah 429 di hulu, bukan
+// sekadar menanganinya di hilir.
+const QUOTA_SAFETY = {
+  alysis: { // rate flash (credits per 1 token)
+    windows: [
+      { ms: 5 * 3600 * 1000, cap: 25, skipAt: 0.8 },  // 5h: skip > 80% (20cr)
+      { ms: 30 * 86400 * 1000, cap: 50, skipAt: 0.8 }, // 30d: skip > 80% (40cr)
+    ],
+    miss: 25 / 1e6, hit: 0.8 / 1e6, out: 75 / 1e6,
+    // Estimasi biaya request masuk; kalau estimasi melebihi cap window, tolak
+    // lokal (hemat reservasi) alih-alih dikirim lalu 429.
+    maxEstCreditsPerRequest: 25 * 0.5, // jangan kirim estimasi > 50% cap 5h
+  },
+};
+
+function alysisRowCredits(t, r) {
+  const p = t?.prompt_tokens ?? t?.promptTokens ?? 0;
+  const c = Math.min(t?.cached_tokens ?? t?.cachedTokens ?? 0, p);
+  const f = Math.max(0, p - c);
+  const o = t?.completion_tokens ?? t?.completionTokens ?? 0;
+  return f * r.miss + c * r.hit + o * r.out;
+}
+
+const ALYSIS_USAGE_COLS = "tokens, timestamp";
+async function alysisRecentBurn(connectionId, windowMs) {
+  try {
+    const { getAdapter } = await import("@/lib/db/driver.js");
+    const db = await getAdapter();
+    const since = new Date(Date.now() - windowMs).toISOString();
+    const rows = db.all(
+      `SELECT ${ALYSIS_USAGE_COLS} FROM usageHistory WHERE provider='alysis' AND connectionId = ? AND timestamp >= ?`,
+      [connectionId, since]
+    );
+    const r = QUOTA_SAFETY.alysis;
+    let burn = 0;
+    for (const row of rows || []) {
+      let t = row.tokens;
+      if (typeof t === "string") { try { t = JSON.parse(t); } catch { continue; } }
+      burn += alysisRowCredits(t, r);
+    }
+    return burn;
+  } catch { return 0; } // fail-open: jangan pernah blokir karena error baca
+}
+
+// true bila akun ini harus di-skip untuk provider tsb (mendekati cap).
+async function shouldSkipForQuota(providerId, connection) {
+  const cfg = QUOTA_SAFETY[providerId];
+  if (!cfg || !connection?.id) return false;
+  for (const w of cfg.windows) {
+    const burn = await alysisRecentBurn(connection.id, w.ms);
+    if (burn >= w.cap * w.skipAt) {
+      log.info("QUOTA_GUARD", `${providerId} | ${connection.name || connection.id?.slice(0, 8)} burn ${burn.toFixed(2)}/${w.cap}cr (${Math.round(w.ms / 3600000)}h) ≥ ${w.skipAt * 100}% — skip`);
+      return true;
+    }
+  }
+  return false;
+}
+
+// Estimasi biaya credits untuk 1 request masuk (~4 chars/token, out≈input/10).
+export function estimateRequestCredits(providerId, body) {
+  const cfg = QUOTA_SAFETY[providerId];
+  if (!cfg) return 0;
+  let chars = 0;
+  try { chars = JSON.stringify(body || {}).length; } catch { return 0; }
+  const inTok = Math.ceil(chars / 4);
+  const outTok = Math.max(1, Math.ceil(inTok / 10));
+  return inTok * cfg.miss + outTok * cfg.out;
+}
+
+// Expose config ke handler (pre-send cost guard).
+export function getQuotaSafetyConfig(providerId) {
+  return QUOTA_SAFETY[providerId] || null;
+}
+
 function stripThinkingSuffix(name) {
   if (!name) return "";
   return String(name).replace(/\s*\((xhigh|max|high|medium|low|minimal|budget)\)$/i, "").trim();
@@ -160,7 +260,7 @@ export async function getProviderCredentials(provider, excludeConnectionIds = nu
     const antigravityQuotaCache = isAntigravity && model ? getAntigravityQuotaCache() : null;
 
     // Filter out model-locked, excluded, and Antigravity quota-exhausted connections.
-    const availableConnections = connections.filter(c => {
+    let availableConnections = connections.filter(c => {
       if (excludeSet.has(c.id)) return false;
       if (isModelLockActive(c, model)) return false;
       // Antigravity: skip if live quota exhausted for this model
@@ -174,6 +274,22 @@ export async function getProviderCredentials(provider, excludeConnectionIds = nu
       }
       return true;
     });
+
+    // Quota-guard: skip akun yang burn-nya sudah mendekati cap (alySIS).
+    // Mencegah request dikirim ke akun yang pasti ditolak 429 — akar billing
+    // hold. Async karena baca usageHistory; fail-open (error → tidak skip).
+    if (QUOTA_SAFETY[providerId] && availableConnections.length > 0) {
+      const kept = [];
+      for (const c of availableConnections) {
+        // eslint-disable-next-line no-await-in-loop
+        if (await shouldSkipForQuota(providerId, c)) {
+          log.info("QUOTA_GUARD", `${providerId} | skip ${c.name || c.id?.slice(0, 8)} (mendekati cap)`);
+          continue;
+        }
+        kept.push(c);
+      }
+      availableConnections = kept;
+    }
 
     log.debug("AUTH", `${provider} | available: ${availableConnections.length}/${connections.length}`);
     connections.forEach(c => {
@@ -214,6 +330,10 @@ export async function getProviderCredentials(provider, excludeConnectionIds = nu
       log.warn("AUTH", `${provider} | all ${connections.length} accounts unavailable`);
       return null;
     }
+
+    // Jeda kecil HANYA saat retry (sudah ada akun yang gagal). Menahan burst
+    // fallback ke akun berikutnya agar reservasi billing tidak menumpuk (alySIS).
+    if (excludeSet.size > 0) await paceProviderPick(providerId);
 
     // Per-provider strategy overrides global setting
     const strategy = providerOverride.fallbackStrategy || settings.fallbackStrategy || "fill-first";
