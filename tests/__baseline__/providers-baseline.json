@@ -177,6 +177,7 @@
       "combined": true,
       "header": "Authorization",
       "scheme": "bearer",
+      "preserveHookAuth": true,
       "hooks": [
         "clineHeaders"
       ]
@@ -193,6 +194,7 @@
       "combined": true,
       "header": "Authorization",
       "scheme": "bearer",
+      "preserveHookAuth": true,
       "hooks": [
         "clineHeaders"
       ]
