@@ -118,7 +118,7 @@ function dbPath() {
   return path.join(process.cwd(), "data", "db", "data.sqlite");
 }
 
-export async function getAlysisUsage(apiKey, providerSpecificData, proxyOptions = null) {
+export async function getAlysisUsage(apiKey, providerSpecificData, proxyOptions = null, connectionId = null) {
   void apiKey;
   void providerSpecificData;
   void proxyOptions;
@@ -129,14 +129,17 @@ export async function getAlysisUsage(apiKey, providerSpecificData, proxyOptions 
       db = new Database(dbPath(), { readonly: true, fileMustExist: true });
       const likeClauses = ALYSIS_MODEL_PREFIXES.map(() => "model LIKE ?").join(" OR ");
       const likeParams = ALYSIS_MODEL_PREFIXES.map((m) => `${m}%`);
+      // Scope ke koneksi ini (round-robin multi-key: tiap slk_ punya jatah sendiri).
+      // Tanpa ini burn semua koneksi terjumlah ke tiap kartu quota (salah kaprah).
+      const connFilter = connectionId ? " AND connectionId = ?" : "";
       const quotas = {};
       let totalBurn = 0;
       for (const window of CREDIT_WINDOWS) {
         const since = new Date(Date.now() - window.ms).toISOString();
         const rows = db.prepare(
           `SELECT model, tokens, timestamp FROM usageHistory
-           WHERE provider = 'alysis' AND (${likeClauses}) AND timestamp >= ?`,
-        ).all(...likeParams, since);
+           WHERE provider = 'alysis' AND (${likeClauses})${connFilter} AND timestamp >= ?`,
+        ).all(...likeParams, ...(connectionId ? [connectionId] : []), since);
         const burn = computeAlysisWindowBurn(rows);
         totalBurn += window.label === "30 days" ? burn : 0;
         const used = round3(burn);

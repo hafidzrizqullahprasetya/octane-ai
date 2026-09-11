@@ -67,7 +67,7 @@ const USAGE_HANDLERS = {
   zed: (c) => getZedUsage(c.accessToken, c.providerSpecificData, c.proxyOptions),
   "octane-zai": (c) => getOctaneZaiUsage(c.accessToken, c.providerSpecificData, c.proxyOptions),
   experientiallabs: (c) => getExperientialLabsUsage(c.apiKey, c.providerSpecificData, c.proxyOptions),
-  alysis: (c) => getAlysisUsage(c.apiKey, c.providerSpecificData, c.proxyOptions),
+  alysis: (c) => getAlysisUsage(c.apiKey, c.providerSpecificData, c.proxyOptions, c.connectionId),
 };
 
 export async function getUsageForProvider(connection, proxyOptions = null, options = {}) {
@@ -86,6 +86,7 @@ export async function getUsageForProvider(connection, proxyOptions = null, optio
     providerSpecificData,
     providerDataWithProjectId,
     proxyOptions,
+    connectionId: connection?.id || null,
     force: options.force === true,
   });
 }
