@@ -64,7 +64,7 @@ export default {
     { id: "hy4-preview-x", name: "Hy4-Preview (Paid)" },
     { id: "glm-5.3", name: "GLM-5.3" },
     { id: "glm-5.3-flash", name: "GLM-5.3-Flash" },
-    { id: "kimi-k3-1", name: "Kimi-K3" },
+    { id: "kimi-k3", name: "Kimi-K3" },
     { id: "deepseek-v4-pro", name: "DeepSeek-V4-Pro" },
     { id: "deepseek-v4-flash", name: "DeepSeek-V4-Flash" },
     { id: "deepseek-v3-2-volc", name: "DeepSeek-V3.2" },
