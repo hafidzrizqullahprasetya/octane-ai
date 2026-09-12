@@ -181,6 +181,40 @@ function githubMonthlyResetMs(status, errorText, provider) {
 }
 
 /**
+ * CodeBuddy credits exhaustion (14018 / "credits exhausted") is an account-level
+ * condition that resets on the 1st of the next monthly cycle.
+ */
+export function codebuddyMonthlyResetMs(status, errorText, provider) {
+  const p = resolveProviderId(provider);
+  if (p !== "codebuddy-intl" && p !== "codebuddy-cn") return null;
+  if (Number(status) !== 429) return null;
+  const lower = String(errorText || "").toLowerCase();
+  if (!lower.includes("credits exhausted") && !lower.includes("credit exhausted") && !lower.includes("14018")) {
+    return null;
+  }
+  const now = new Date();
+  return Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0);
+}
+
+/**
+ * Checks if a CodeBuddy connection recorded credit exhaustion during the current calendar month.
+ */
+export function isCodebuddyMonthlyExhausted(providerId, connection) {
+  const p = resolveProviderId(providerId);
+  if (p !== "codebuddy-intl" && p !== "codebuddy-cn") return false;
+  if (!connection) return false;
+
+  const lowerErr = String(connection.lastError || "").toLowerCase();
+  const isExhaustedErr = lowerErr.includes("credits exhausted") || lowerErr.includes("credit exhausted") || lowerErr.includes("14018");
+  if (!isExhaustedErr) return false;
+
+  if (!connection.lastErrorAt) return false;
+  const errDate = new Date(connection.lastErrorAt);
+  const now = new Date();
+  return errDate.getUTCFullYear() === now.getUTCFullYear() && errDate.getUTCMonth() === now.getUTCMonth();
+}
+
+/**
  * Get provider credentials from localDb
  * Filters out unavailable accounts and returns the selected account based on strategy
  * @param {string} provider - Provider name
@@ -263,6 +297,12 @@ export async function getProviderCredentials(provider, excludeConnectionIds = nu
     let availableConnections = connections.filter(c => {
       if (excludeSet.has(c.id)) return false;
       if (isModelLockActive(c, model)) return false;
+      // CodeBuddy: skip if monthly credits were exhausted in current month
+      if (isCodebuddyMonthlyExhausted(providerId, c)) {
+        const account = c.displayName || c.name || c.email || c.id?.slice(0, 8) || "unknown";
+        log.info("AUTH", `${providerId} | skip ${account} (CodeBuddy monthly credits exhausted)`);
+        return false;
+      }
       // Antigravity: skip if live quota exhausted for this model
       if (isAntigravity && model && antigravityQuotaCache) {
         const quota = antigravityQuotaCache.get(c.id)?.[model];
@@ -388,8 +428,21 @@ export async function getProviderCredentials(provider, excludeConnectionIds = nu
         });
       }
     } else {
-      // Default: fill-first (already sorted by priority in getProviderConnections)
-      connection = availableConnections[0];
+      // Default: fill-first (prioritize healthy connections without errors before untested/error ones)
+      const sortedByHealth = [...availableConnections].sort((a, b) => {
+        const aError = a.testStatus === "unavailable" || !!a.lastError ? 1 : 0;
+        const bError = b.testStatus === "unavailable" || !!b.lastError ? 1 : 0;
+        if (aError !== bError) return aError - bError;
+
+        const pDiff = (a.priority || 999) - (b.priority || 999);
+        if (pDiff !== 0) return pDiff;
+
+        if (a.lastUsedAt && b.lastUsedAt) return new Date(b.lastUsedAt) - new Date(a.lastUsedAt);
+        if (a.lastUsedAt) return -1;
+        if (b.lastUsedAt) return 1;
+        return 0;
+      });
+      connection = sortedByHealth[0];
     }
 
     // Scope the region-aware picker to this provider/model (e.g. freebuff::gpt-5.6-luna)
@@ -449,14 +502,16 @@ export async function markAccountUnavailable(connectionId, status, errorText, pr
   const conn = connections.find(c => c.id === connectionId);
   const backoffLevel = conn?.backoffLevel || 0;
 
-  // GitHub premium-request exhaustion is account-wide until the next UTC month.
+  // Monthly exhaustion (GitHub / CodeBuddy) is account-wide until the next UTC month.
   const githubResetAtMs = githubMonthlyResetMs(status, errorText, provider);
+  const codebuddyResetAtMs = codebuddyMonthlyResetMs(status, errorText, provider);
+  const monthlyResetAtMs = githubResetAtMs || codebuddyResetAtMs;
 
   // Provider-specific precise cooldown (e.g. codex usage_limit_reached resets_at) overrides backoff
   let shouldFallback, cooldownMs, newBackoffLevel, noLock = false;
-  if (githubResetAtMs) {
+  if (monthlyResetAtMs) {
     shouldFallback = true;
-    cooldownMs = githubResetAtMs - Date.now();
+    cooldownMs = monthlyResetAtMs - Date.now();
     newBackoffLevel = 0;
   } else if (resetsAtMs && resetsAtMs > Date.now()) {
     shouldFallback = true;
@@ -486,7 +541,7 @@ export async function markAccountUnavailable(connectionId, status, errorText, pr
   }
 
   const reason = typeof errorText === "string" ? errorText.slice(0, 100) : "Provider error";
-  const lockUpdate = buildModelLockUpdate(githubResetAtMs ? null : model, cooldownMs);
+  const lockUpdate = buildModelLockUpdate(monthlyResetAtMs ? null : model, cooldownMs);
 
   await updateProviderConnection(connectionId, {
     ...lockUpdate,
