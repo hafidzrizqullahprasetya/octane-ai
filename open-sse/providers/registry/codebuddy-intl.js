@@ -44,6 +44,9 @@ export default {
     },
   },
   models: [
+    // DeepSeek Series
+    { id: "deepseek-v4.1-flash", name: "DeepSeek-V4.1-Flash" },
+
     // GLM 5.3 Series
     { id: "glm-5.3(high)", name: "GLM-5.3 (High Reasoning)" },
     { id: "glm-5.3(xhigh)", name: "GLM-5.3 (XHigh Reasoning)" },
@@ -55,8 +58,6 @@ export default {
     { id: "kimi-k3(xhigh)", name: "Kimi-K3 (XHigh Reasoning)" },
     { id: "kimi-k3(max)", name: "Kimi-K3 (Max Reasoning)" },
     { id: "kimi-k3", name: "Kimi-K3" },
-    { id: "kimi-k2.6", name: "Kimi-K2.6" },
-    { id: "kimi-k2.5", name: "Kimi-K2.5" },
 
     // Anthropic Claude Series
     { id: "claude-opus-5(high)", name: "Claude Opus 5 (High Reasoning)" },
@@ -67,15 +68,11 @@ export default {
     { id: "claude-sonnet-4.6(max)", name: "Claude Sonnet 4.6 (Max Reasoning)" },
     { id: "claude-sonnet-4.6", name: "Claude Sonnet 4.6" },
 
-    // OpenAI GPT-5.6 Series
+    // OpenAI GPT-5.6 / GPT-5.5 Series
     { id: "gpt-5.6-luna(high)", name: "GPT-5.6 Luna (High Reasoning)" },
     { id: "gpt-5.6-luna(xhigh)", name: "GPT-5.6 Luna (XHigh Reasoning)" },
     { id: "gpt-5.6-luna(max)", name: "GPT-5.6 Luna (Max Reasoning)" },
     { id: "gpt-5.6-luna", name: "GPT-5.6 Luna" },
-    { id: "gpt-5.6-sol(high)", name: "GPT-5.6 Sol (High Reasoning)" },
-    { id: "gpt-5.6-sol(xhigh)", name: "GPT-5.6 Sol (XHigh Reasoning)" },
-    { id: "gpt-5.6-sol(max)", name: "GPT-5.6 Sol (Max Reasoning)" },
-    { id: "gpt-5.6-sol", name: "GPT-5.6 Sol" },
     { id: "gpt-5.6-terra(high)", name: "GPT-5.6 Terra (High Reasoning)" },
     { id: "gpt-5.6-terra(xhigh)", name: "GPT-5.6 Terra (XHigh Reasoning)" },
     { id: "gpt-5.6-terra(max)", name: "GPT-5.6 Terra (Max Reasoning)" },
@@ -87,15 +84,6 @@ export default {
     { id: "minimax-m3(high)", name: "MiniMax-M3 (High Reasoning)" },
     { id: "minimax-m3(xhigh)", name: "MiniMax-M3 (XHigh Reasoning)" },
     { id: "minimax-m3(max)", name: "MiniMax-M3 (Max Reasoning)" },
-    { id: "minimax-m3", name: "MiniMax-M3" },
-
-    // DeepSeek Series
-    { id: "deepseek-v4-pro", name: "DeepSeek-V4-Pro" },
-    { id: "deepseek-v4-flash", name: "DeepSeek-V4-Flash" },
-    { id: "deepseek-v3-2-volc", name: "DeepSeek-V3.2" },
-
-    // Vision
-    { id: "glm-5v-turbo", name: "GLM-5v-Turbo" },
   ],
   oauth: {
     baseUrl: "https://www.codebuddy.ai",
