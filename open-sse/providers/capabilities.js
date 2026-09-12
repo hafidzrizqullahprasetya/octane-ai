@@ -274,7 +274,7 @@ export const PROVIDER_CAPABILITIES = {
     "deepseek-v3-2-volc": { reasoning: true, thinkingFormat: "openai", thinkingCanDisable: false, contextWindow: 96000, maxOutput: 32000 },
   },
   "codebuddy-intl": {
-    "deepseek-v4.1-flash": { reasoning: true, thinkingFormat: "openai", thinkingCanDisable: false, contextWindow: 1000000, maxOutput: 50000 },
+    "deepseek-v4.1-flash": { vision: true, reasoning: true, thinkingFormat: "openai", thinkingCanDisable: false, contextWindow: 1000000, maxOutput: 50000 },
     "glm-5.3":            { reasoning: true, thinkingFormat: "openai", thinkingCanDisable: false, contextWindow: 1000000, maxOutput: 48000 },
     "kimi-k3":            { vision: true, reasoning: true, thinkingFormat: "openai", thinkingCanDisable: false, contextWindow: 1000000, maxOutput: 48000 },
   },
@@ -442,7 +442,7 @@ export const PATTERN_CAPABILITIES = [
   { pattern: "*ling-*",         caps: { reasoning: true, contextWindow: 128000 } },
   { pattern: "*ox-alpha*",      caps: { vision: true, reasoning: true, contextWindow: 1000000, maxOutput: 32000 } },
   { pattern: "*kimi-k3*",       caps: { vision: true, reasoning: true, contextWindow: 1050000, maxOutput: 131072 } },
-  { pattern: "*deepseek-v4.1*", caps: { reasoning: true, contextWindow: 1000000, maxOutput: 64000 } },
+  { pattern: "*deepseek-v4.1*", caps: { vision: true, reasoning: true, contextWindow: 1000000, maxOutput: 64000 } },
   { pattern: "*deepseek-v4-flash*", caps: { reasoning: true, contextWindow: 1000000, maxOutput: 64000 } },
   { pattern: "*gpt-5.6-luna*",  caps: { vision: true, reasoning: true, contextWindow: 400000, maxOutput: 128000 } },
 ];
