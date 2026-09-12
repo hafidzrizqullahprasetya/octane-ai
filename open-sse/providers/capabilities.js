@@ -274,6 +274,9 @@ export const PROVIDER_CAPABILITIES = {
     "deepseek-v3-2-volc": { reasoning: true, thinkingFormat: "openai", thinkingCanDisable: false, contextWindow: 96000, maxOutput: 32000 },
   },
   "codebuddy-intl": {
+    "deepseek-v4.1-flash": { vision: true, reasoning: true, thinkingFormat: "openai", thinkingCanDisable: false, contextWindow: 1000000, maxOutput: 50000 },
+    "glm-5.3":            { vision: true, reasoning: true, thinkingFormat: "openai", thinkingCanDisable: false, contextWindow: 1000000, maxOutput: 48000 },
+    "kimi-k3":            { vision: true, reasoning: true, thinkingFormat: "openai", thinkingCanDisable: false, contextWindow: 1000000, maxOutput: 48000 },
     "glm-5.2":            { reasoning: true, thinkingFormat: "openai", thinkingCanDisable: false, contextWindow: 1000000, maxOutput: 48000 },
     "glm-5.1":            { reasoning: true, thinkingFormat: "openai", thinkingCanDisable: false, contextWindow: 200000, maxOutput: 48000 },
     "glm-5.0":            { reasoning: true, thinkingFormat: "openai", contextWindow: 200000, maxOutput: 48000 },
@@ -388,7 +391,7 @@ export const PATTERN_CAPABILITIES = [
   // ── GLM / Z.ai (thinking.enabled; disable via enable_thinking:false) ─
   // reasoning_effort is only read by z.ai from GLM-5.2 onward (docs.z.ai/guides/capabilities/thinking) —
   // older GLM (4.x, 5.0, 5.1, 5-turbo, 5v-turbo) ignore it, so gate it per exact version, not the "*glm-5*" catch-all.
-  { pattern: "*glm-5.3*",       caps: { reasoning: true, thinkingFormat: "zai", thinkingEffortSupported: true, contextWindow: 200000, maxOutput: 128000 } },
+  { pattern: "*glm-5.3*",       caps: { vision: true, reasoning: true, thinkingFormat: "zai", thinkingEffortSupported: true, contextWindow: 200000, maxOutput: 128000 } },
   { pattern: "*glm-5.2*",       caps: { reasoning: true, thinkingFormat: "zai", thinkingEffortSupported: true, contextWindow: 200000, maxOutput: 128000 } },
   { pattern: "*glm-5*",         caps: { reasoning: true, thinkingFormat: "zai", contextWindow: 200000, maxOutput: 128000 } },
   { pattern: "*glm-4.7*",       caps: { reasoning: true, thinkingFormat: "zai", contextWindow: 200000, maxOutput: 128000 } },
@@ -453,7 +456,8 @@ export const PATTERN_CAPABILITIES = [
   { pattern: "*nemotron*",      caps: { reasoning: true, contextWindow: 128000 } },
   { pattern: "*ling-*",         caps: { reasoning: true, contextWindow: 128000 } },
   { pattern: "*ox-alpha*",      caps: { vision: true, reasoning: true, contextWindow: 1000000, maxOutput: 32000 } },
-  { pattern: "*kimi-k3*",       caps: { reasoning: true, contextWindow: 1050000, maxOutput: 131072 } },
+  { pattern: "*kimi-k3*",       caps: { vision: true, reasoning: true, contextWindow: 1050000, maxOutput: 131072 } },
+  { pattern: "*deepseek-v4.1*", caps: { vision: true, reasoning: true, contextWindow: 1000000, maxOutput: 64000 } },
   { pattern: "*deepseek-v4-flash*", caps: { reasoning: true, contextWindow: 1000000, maxOutput: 64000 } },
   { pattern: "*gpt-5.6-luna*",  caps: { vision: true, reasoning: true, contextWindow: 400000, maxOutput: 128000 } },
 ];
