@@ -2,7 +2,6 @@ import { BaseExecutor } from "./base.js";
 import { PROVIDERS } from "../config/providers.js";
 import { FreebuffExecutor } from "./freebuff.js";
 import { OpenCodeExecutor } from "./opencode.js";
-import { ExperientialLabsExecutor } from "./experientiallabs.js";
 import { DefaultExecutor } from "./default.js";
 import { resolveConnectionProxyConfig } from "../../src/lib/network/connectionProxy.js";
 import { getSettings } from "../../src/lib/db/repos/settingsRepo.js";
@@ -31,23 +30,12 @@ const MODEL_PROVIDER_MAP = {
   "ox-alpha-free": ["opencode"],
   "mimo-v2.5-free": ["opencode"],
   "laguna-s-2.1-free": ["opencode"],
-  // Experiential Labs (env-key gateway, gratis)
-  "gpt-6-astra": ["experientiallabs"],
-  "claude-fable-5.1": ["experientiallabs"],
-  "deepseek-v4-flash-exp": ["experientiallabs"],
-  "minimax-m3-free": ["experientiallabs"],
 };
 
 const FREEBUFF_UPSTREAM_MODEL_MAP = {
   "mimo-v2.5": "mimo/mimo-v2.5",
   "glm-5.3-flash": "z-ai/glm-5.3-flash",
   "glm-5.3": "z-ai/glm-5.3-flash",
-};
-
-// Experiential Labs: id mask ot/ -> id upstream (deepseek dibedakan supaya
-// tidak bentrok dengan rute freebuff ot/deepseek-v4-flash)
-const EXPLABS_UPSTREAM_MODEL_MAP = {
-  "deepseek-v4-flash-exp": "deepseek-v4-flash",
 };
 
 function getOctaneOrder(settings) {
@@ -139,9 +127,6 @@ export class OctaneExecutor extends BaseExecutor {
           providerSpecificData: proxyOptions || {},
         }];
       }
-      // Env-key providers: EXPERIENTIALLABS_API_KEY dari env dipakai kalau tidak ada
-      // koneksi DB aktif untuk provider ini (env-fallback pattern, cf. azure.js).
-      const explabsEnvReady = providerId === "experientiallabs" && !!process.env.EXPERIENTIALLABS_API_KEY?.trim();
       if (sourceConns.length && !executor.noAuth) {
         candidates = sourceConns
           .filter(c => c.provider === providerId && c.testStatus === "active")
@@ -166,13 +151,8 @@ export class OctaneExecutor extends BaseExecutor {
           const any = sourceConns.find(c => c.provider === providerId && c.testStatus === "active");
           if (any) {
             candidates = [any];
-          } else if (explabsEnvReady) {
-            candidates = [{ id: "env-key", provider: providerId, name: "env:EXPERIENTIALLABS_API_KEY", isActive: true, testStatus: "active" }];
           }
         }
-      } else if (explabsEnvReady) {
-        // Tidak ada koneksi DB sama sekali — tetap bisa jalan via env key
-        candidates = [{ id: "env-key", provider: providerId, name: "env:EXPERIENTIALLABS_API_KEY", isActive: true, testStatus: "active" }];
       }
       // Coba tiap kandidat akun yang strict match (reuse sesi per akun, tidak bikin sesi baru per test)
       for (const conn of candidates) {
@@ -239,9 +219,7 @@ export class OctaneExecutor extends BaseExecutor {
         try {
             let providerModel = providerId === "freebuff"
               ? (FREEBUFF_UPSTREAM_MODEL_MAP[cleanModel.split("(")[0].trim()] || cleanModel)
-              : providerId === "experientiallabs"
-                ? (EXPLABS_UPSTREAM_MODEL_MAP[cleanModel.split("(")[0].trim()] || cleanModel)
-                : cleanModel;
+              : cleanModel;
             if (providerId === "freebuff") {
               log?.debug?.("OCTANE", `Freebuff route ot/${cleanModel} -> model=${providerModel} account=${providerCreds?.name || providerCreds?.email || "?"}`);
             }
@@ -288,9 +266,6 @@ function getDelegatedExecutors() {
       : delegatedExecutors.set("opencode", new OpenCodeExecutor()).get("opencode"),
     "codebuddy-intl": getDefaultExecutor("codebuddy-intl"),
     "codebuddy-cn": getDefaultExecutor("codebuddy-cn"),
-    experientiallabs: delegatedExecutors.has("experientiallabs")
-      ? delegatedExecutors.get("experientiallabs")
-      : delegatedExecutors.set("experientiallabs", new ExperientialLabsExecutor()).get("experientiallabs"),
   };
 }
 

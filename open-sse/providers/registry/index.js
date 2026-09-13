@@ -38,7 +38,6 @@ import p35 from "./devin-cli.js";
 import p36 from "./edge-tts.js";
 import p37 from "./elevenlabs.js";
 import p38 from "./exa.js";
-import p39 from "./experientiallabs.js";
 import p40 from "./fal-ai.js";
 import p41 from "./featherless.js";
 import p42 from "./firecrawl.js";
@@ -166,7 +165,6 @@ const REGISTRY = [
   p36,
   p37,
   p38,
-  p39,
   p40,
   p41,
   p42,

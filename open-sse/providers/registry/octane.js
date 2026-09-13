@@ -32,7 +32,7 @@ export default {
   // Default-only untuk rute freebuff (luna/deepseek/mimo/glm/solar): suffix
   // thinking di-strip dan reasoning di-drop executor (server default), jadi
   // varian suffix kosmetik. Varian thinking cuma untuk rute yang effort-nya
-  // diteruskan (muse via opencode, experientiallabs).
+  // diteruskan (muse via opencode).
   models: [
     // Freebuff core (vision+reasoning)
     { id: "gpt-5.6-luna", name: "GPT-5.6 Luna", upstreamModelId: "openai/gpt-5.6-luna" },
@@ -53,13 +53,5 @@ export default {
     { id: "x-preview-f-free", name: "Ox Preview Free", upstreamModelId: "x-preview-f-free" },
     { id: "mimo-v2.5-free", name: "MiMo V2.5 Free", upstreamModelId: "mimo-v2.5-free" },
     { id: "laguna-s-2.1-free", name: "Laguna S 2.1 Free", upstreamModelId: "laguna-s-2.1-free" },
-    // Experiential Labs (free $0 tier, via env key EXPERIENTIALLABS_API_KEY)
-    { id: "gpt-6-astra", name: "GPT-6 Astra", upstreamModelId: "gpt-6-astra", thinking: true, contextLength: 1050000 },
-    { id: "gpt-6-astra(high)", name: "GPT-6 Astra (High)", upstreamModelId: "gpt-6-astra", thinking: true },
-    { id: "claude-fable-5.1", name: "Claude Fable 5.1", upstreamModelId: "claude-fable-5.1", thinking: true, contextLength: 1000000 },
-    { id: "claude-fable-5.1(high)", name: "Claude Fable 5.1 (High)", upstreamModelId: "claude-fable-5.1", thinking: true },
-    { id: "deepseek-v4-flash-exp", name: "DeepSeek V4 Flash (Exp)", upstreamModelId: "deepseek-v4-flash-exp", thinking: true, contextLength: 1050000 },
-    { id: "deepseek-v4-flash-exp(high)", name: "DeepSeek V4 Flash Exp (High)", upstreamModelId: "deepseek-v4-flash-exp", thinking: true },
-    { id: "minimax-m3-free", name: "MiniMax M3 Free", upstreamModelId: "minimax-m3-free", thinking: true, contextLength: 1000000 },
   ],
 };
