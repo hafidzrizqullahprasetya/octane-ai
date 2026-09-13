@@ -9,7 +9,7 @@ export default {
     name: "OpenCode Free",
     icon: "terminal",
     color: "#E87040",
-    textIcon: "OT",
+    textIcon: "OC",
   },
   category: "free",
   noAuth: true,
