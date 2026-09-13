@@ -79,7 +79,6 @@ import p76 from "./morph.js";
 import p77 from "./nanobanana.js";
 import p78 from "./nebius.js";
 import p79 from "./nvidia.js";
-import p80 from "./octane-zai.js";
 import p81 from "./octane.js";
 import p82 from "./ollama-local.js";
 import p83 from "./ollama-search.js";
@@ -208,7 +207,6 @@ const REGISTRY = [
   p77,
   p78,
   p79,
-  p80,
   p81,
   p82,
   p83,

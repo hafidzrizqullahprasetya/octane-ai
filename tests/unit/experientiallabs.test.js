@@ -1,8 +1,7 @@
 // Regression tests for the Experiential Labs integration (ot/gpt-6-astra,
 // ot/claude-fable-5.1, ot/deepseek-v4-flash-exp, ot/minimax-m3-free).
 // Written against the integration tree: registry + routing + capabilities +
-// pricing guards. Executor source is checked via static read (same seam style
-// as octane-zai.test.js) — importing the executor would pull the settings/DB
+// pricing guards. Executor source is checked via static read — importing the executor would pull the settings/DB
 // chain, so no DB/network is touched here.
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";

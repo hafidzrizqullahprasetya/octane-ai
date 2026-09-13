@@ -27,7 +27,6 @@ import { DefaultExecutor } from "./default.js";
 import { DevinCliExecutor } from "./devin-cli.js";
 import { FreebuffExecutor } from "./freebuff.js";
 import { OctaneExecutor } from "./octane.js";
-import { OctaneZaiExecutor } from "./octane-zai.js";
 import { ExperientialLabsExecutor } from "./experientiallabs.js";
 
 const executors = {
@@ -65,7 +64,6 @@ const executors = {
   freebuff: new FreebuffExecutor(),
   octane: new OctaneExecutor(),
   ot: new OctaneExecutor(),
-  "octane-zai": new OctaneZaiExecutor(),
   experientiallabs: new ExperientialLabsExecutor(),
 };
 

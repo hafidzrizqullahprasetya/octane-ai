@@ -44,7 +44,7 @@ export default {
     { id: "muse-spark-1.3(xhigh)", name: "Muse Spark 1.3 (XHigh)", upstreamModelId: "muse-spark-1.3-contributor", contextLength: 1000000 },
     { id: "deepseek-v4-flash", name: "DeepSeek V4 Flash", upstreamModelId: "deepseek/deepseek-v4-flash", thinking: true, vision: true, contextLength: 1000000 },
     { id: "mimo-v2.5", name: "MiMo V2.5", upstreamModelId: "mimo/mimo-v2.5", thinking: true, vision: true, contextLength: 1000000 },
-    // Octane-ZAI self-hosted (GLM via akun Z.ai sendiri, 1M context)
+    // Z.ai via Freebuff (1M context)
     { id: "glm-5.3", name: "GLM 5.3", upstreamModelId: "glm-5.3", contextLength: 1000000 },
     { id: "glm-5.3-flash", name: "GLM 5.3 Flash", upstreamModelId: "glm-5.3-flash", thinking: true, vision: true, contextLength: 1000000 },
     // Opencode Free extras

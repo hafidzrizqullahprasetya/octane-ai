@@ -2,7 +2,6 @@ import { BaseExecutor } from "./base.js";
 import { PROVIDERS } from "../config/providers.js";
 import { FreebuffExecutor } from "./freebuff.js";
 import { OpenCodeExecutor } from "./opencode.js";
-import { OctaneZaiExecutor } from "./octane-zai.js";
 import { ExperientialLabsExecutor } from "./experientiallabs.js";
 import { DefaultExecutor } from "./default.js";
 import { resolveConnectionProxyConfig } from "../../src/lib/network/connectionProxy.js";
@@ -289,9 +288,6 @@ function getDelegatedExecutors() {
       : delegatedExecutors.set("opencode", new OpenCodeExecutor()).get("opencode"),
     "codebuddy-intl": getDefaultExecutor("codebuddy-intl"),
     "codebuddy-cn": getDefaultExecutor("codebuddy-cn"),
-    "octane-zai": delegatedExecutors.has("octane-zai")
-      ? delegatedExecutors.get("octane-zai")
-      : delegatedExecutors.set("octane-zai", new OctaneZaiExecutor()).get("octane-zai"),
     experientiallabs: delegatedExecutors.has("experientiallabs")
       ? delegatedExecutors.get("experientiallabs")
       : delegatedExecutors.set("experientiallabs", new ExperientialLabsExecutor()).get("experientiallabs"),
