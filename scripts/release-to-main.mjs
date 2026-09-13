@@ -50,6 +50,7 @@ try {
     "jsconfig.json",
     "eslint.config.mjs",
     "postcss.config.mjs",
+    "scripts/",
     ".dockerignore",
     ".env.example",
     ".github/workflows/deploy.yml"
