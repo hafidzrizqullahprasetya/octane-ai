@@ -38,7 +38,6 @@ import p35 from "./devin-cli.js";
 import p36 from "./edge-tts.js";
 import p37 from "./elevenlabs.js";
 import p38 from "./exa.js";
-import p39 from "./experientiallabs.js";
 import p40 from "./fal-ai.js";
 import p41 from "./featherless.js";
 import p42 from "./firecrawl.js";
@@ -79,7 +78,6 @@ import p76 from "./morph.js";
 import p77 from "./nanobanana.js";
 import p78 from "./nebius.js";
 import p79 from "./nvidia.js";
-import p80 from "./octane-zai.js";
 import p81 from "./octane.js";
 import p82 from "./ollama-local.js";
 import p83 from "./ollama-search.js";
@@ -167,7 +165,6 @@ const REGISTRY = [
   p36,
   p37,
   p38,
-  p39,
   p40,
   p41,
   p42,
@@ -208,7 +205,6 @@ const REGISTRY = [
   p77,
   p78,
   p79,
-  p80,
   p81,
   p82,
   p83,

@@ -51,10 +51,18 @@ try {
     "eslint.config.mjs",
     "postcss.config.mjs",
     "scripts/",
+    ".gitignore",
     ".dockerignore",
     ".env.example",
     ".github/workflows/deploy.yml"
   ];
+
+  // Clear directory index first so deleted files in dev are deleted on main
+  for (const p of corePaths) {
+    if (p.endsWith("/")) {
+      try { run(`git rm -rf --cached --ignore-unmatch ${p}`); } catch {}
+    }
+  }
 
   run(`git checkout dev -- ${corePaths.join(" ")}`);
 
