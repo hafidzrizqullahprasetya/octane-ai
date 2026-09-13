@@ -573,17 +573,19 @@ export async function buildModelsList(kindFilter, options = {}) {
   // Scope sengaja hanya octane: provider noAuth lain belum tentu servable
   // tanpa akun. Guard covered + dedup bawah cegah duplikat bila suatu saat
   // octane punya koneksi sendiri.
-  if (kindFilter.includes(LLM_KIND) && !activeConnectionByProvider.has("octane")) {
-    const alias = getProviderAlias("octane") || PROVIDER_ID_TO_ALIAS.octane || "ot";
-    const staticModels = PROVIDER_MODELS[alias] || PROVIDER_MODELS.octane || [];
-    for (const m of staticModels) {
-      if (!m?.id) continue;
-      if (modelKind(m) && modelKind(m) !== LLM_KIND) continue;
-      const caps = getCapabilitiesForModel("octane", m.id);
-      const entry = { id: `${alias}/${m.id}`, object: "model", owned_by: alias };
-      if (Number.isFinite(caps?.contextWindow)) entry.context_length = caps.contextWindow;
-      if (Number.isFinite(caps?.maxOutput)) entry.max_completion_tokens = caps.maxOutput;
-      models.push(entry);
+  for (const pId of ["octane", "opencode"]) {
+    if (kindFilter.includes(LLM_KIND) && !activeConnectionByProvider.has(pId)) {
+      const alias = getProviderAlias(pId) || PROVIDER_ID_TO_ALIAS[pId] || (pId === "octane" ? "ot" : "oc");
+      const staticModels = PROVIDER_MODELS[alias] || PROVIDER_MODELS[pId] || [];
+      for (const m of staticModels) {
+        if (!m?.id) continue;
+        if (modelKind(m) && modelKind(m) !== LLM_KIND) continue;
+        const caps = getCapabilitiesForModel(pId, m.id);
+        const entry = { id: `${alias}/${m.id}`, object: "model", owned_by: alias };
+        if (Number.isFinite(caps?.contextWindow)) entry.context_length = caps.contextWindow;
+        if (Number.isFinite(caps?.maxOutput)) entry.max_completion_tokens = caps.maxOutput;
+        models.push(entry);
+      }
     }
   }
 

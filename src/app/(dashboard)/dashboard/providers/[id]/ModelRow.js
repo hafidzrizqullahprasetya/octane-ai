@@ -2,8 +2,9 @@ import PropTypes from "prop-types";
 import { CapacityBadges } from "@/shared/components";
 
 export default function ModelRow({ model, fullModel, alias, copied, onCopy, testStatus, isCustom, isFree, onDeleteAlias, onTest, isTesting, onDisable, caps, thinkingSuffix }) {
+  const hasExistingSuffix = /\s*\([^()]+\)$/.test(fullModel || "");
   const cleanFullModel = fullModel ? String(fullModel).replace(/\s*\([^()]+\)$/, "") : "";
-  const displayModel = thinkingSuffix ? `${cleanFullModel}(${thinkingSuffix})` : (fullModel || cleanFullModel);
+  const displayModel = (!hasExistingSuffix && thinkingSuffix) ? `${cleanFullModel}(${thinkingSuffix})` : (fullModel || cleanFullModel);
   const borderColor = testStatus === "ok"
     ? "border-green-500/40"
     : testStatus === "error"
