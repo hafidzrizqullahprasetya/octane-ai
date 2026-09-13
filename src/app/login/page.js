@@ -249,12 +249,6 @@ export default function LoginPage() {
                 >
                   {retryAfter > 0 ? `Wait ${retryAfter}s` : "Login"}
                 </Button>
-
-                {hasPassword === false && (
-                  <p className="text-xs text-center text-amber-600 dark:text-amber-400">
-                    Security risk: no password set. You will be asked to set one when logging in remotely.
-                  </p>
-                )}
               </form>
             ) : (
               error && <p className="text-xs text-red-500">{error}</p>
