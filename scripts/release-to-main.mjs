@@ -57,6 +57,13 @@ try {
     ".github/workflows/deploy.yml"
   ];
 
+  // Clear directory index first so deleted files in dev are deleted on main
+  for (const p of corePaths) {
+    if (p.endsWith("/")) {
+      try { run(`git rm -rf --cached --ignore-unmatch ${p}`); } catch {}
+    }
+  }
+
   run(`git checkout dev -- ${corePaths.join(" ")}`);
 
   // 5. Commit and push to main
