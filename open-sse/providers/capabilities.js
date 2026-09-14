@@ -277,6 +277,11 @@ export const PROVIDER_CAPABILITIES = {
   },
 };
 
+// ponytail: alias common provider shortnames for capability resolution
+PROVIDER_CAPABILITIES["cbai"] = PROVIDER_CAPABILITIES["codebuddy-intl"];
+PROVIDER_CAPABILITIES["codebuddy"] = PROVIDER_CAPABILITIES["codebuddy-cn"];
+
+
 /**
  * Pattern fallback — glob (* = wildcard), matched case-insensitively and
  * anchored (^...$) so a pattern must match the full model id. ORDER MATTERS:
@@ -491,17 +496,30 @@ function refine(base, provider, model) {
   return result;
 }
 
-export function getCapabilitiesForModel(provider, model) {
-  if (!model) return { ...DEFAULT_CAPABILITIES };
+// ponytail: strip thinking suffix e.g. "model(max)" -> "model" to preserve capabilities
+function stripThinkingSuffix(model) {
+  if (typeof model !== "string") return model;
+  const m = model.match(/^(.*)\([^()]+\)\s*$/);
+  return m ? m[1].trim() : model;
+}
+
+export function getCapabilitiesForModel(provider, rawModel) {
+  if (!rawModel) return { ...DEFAULT_CAPABILITIES };
+
+  const model = stripThinkingSuffix(rawModel);
 
   // Canonical exact lookup strips vendor prefix: "anthropic/claude-opus-4.7" -> "claude-opus-4.7".
   const baseModel = model.includes("/") ? model.split("/").pop() : model;
+  const resolvedProvider = provider || (rawModel.includes("/") ? rawModel.split("/")[0] : null);
 
   // 1. Provider-specific override — BYPASSED to 1M
-  if (provider) {
-    const providerCaps = PROVIDER_CAPABILITIES[provider];
+  if (resolvedProvider) {
+    const providerCaps = PROVIDER_CAPABILITIES[resolvedProvider];
     if (providerCaps?.[model]) return { ...DEFAULT_CAPABILITIES, ...providerCaps[model], contextWindow: BYPASS_CONTEXT_WINDOW };
     if (providerCaps?.[baseModel]) return { ...DEFAULT_CAPABILITIES, ...providerCaps[baseModel], contextWindow: BYPASS_CONTEXT_WINDOW };
+    if (rawModel !== model && providerCaps?.[rawModel]) {
+      return { ...DEFAULT_CAPABILITIES, ...providerCaps[rawModel], contextWindow: BYPASS_CONTEXT_WINDOW };
+    }
   }
 
   // 2. Canonical exact — BYPASSED to 1M
@@ -511,10 +529,10 @@ export function getCapabilitiesForModel(provider, model) {
   // 3. Pattern match (first match wins), refined by catalog + name heuristic
   for (const { pattern, caps } of PATTERN_CAPABILITIES) {
     if (matchPattern(pattern, baseModel) || matchPattern(pattern, model)) {
-      return refine(caps, provider, model);
+      return refine(caps, resolvedProvider, model);
     }
   }
 
   // 4. Floor
-  return refine(null, provider, model);
+  return refine(null, resolvedProvider, model);
 }

@@ -112,4 +112,26 @@ describe("Hermes Vision Image Detection", () => {
     expect(body.messages[0].images).toBeUndefined();
     expect(body.messages[0].experimental_attachments).toHaveLength(0);
   });
+
+  it("preserves vision capability when model name carries thinking suffix like (max)", async () => {
+    const { getCapabilitiesForModel } = await import("../../open-sse/providers/capabilities.js");
+    const caps = getCapabilitiesForModel("codebuddy-intl", "deepseek-v4.1-flash(max)");
+    expect(caps.vision).toBe(true);
+
+    const body = {
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "Explain this image" },
+            { type: "image_url", image_url: { url: "data:image/png;base64,iVBORw0KGgo=" } },
+          ],
+        },
+      ],
+    };
+    stripUnsupportedModalities(body, FORMATS.OPENAI, caps);
+    expect(body.messages[0].content.some((c) => c.type === "image_url")).toBe(true);
+    expect(body.messages[0].content.some((c) => c.text && c.text.includes("image omitted"))).toBe(false);
+  });
 });
+
