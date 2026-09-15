@@ -17,6 +17,8 @@ Drop-in skills for any AI agent (Claude, Cursor, ChatGPT, custom SDK). Just **co
 | Embeddings | https://raw.githubusercontent.com/decolua/9router/refs/heads/master/skills/9router-embeddings/SKILL.md |
 | Web search | https://raw.githubusercontent.com/decolua/9router/refs/heads/master/skills/9router-web-search/SKILL.md |
 | Web fetch (URL → markdown) | https://raw.githubusercontent.com/decolua/9router/refs/heads/master/skills/9router-web-fetch/SKILL.md |
+| BOZ-GEMINI persona (Gemini 3.8 via 9Router) | skills/9router-gemini-core/SKILL.md |
+| BOZ-MUSE persona (Muse Spark 1.3 via 9Router) | skills/9router-muse-core/SKILL.md |
 
 ## How to use
 
