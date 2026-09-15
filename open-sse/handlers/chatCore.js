@@ -305,10 +305,10 @@ export async function handleChatCore({ body, modelInfo, credentials, log, onCred
   if (xf.length && log?.line) log.line(reqTag, "⚙", xf.join(" · "));
 
   // Size guard: last line of defense against host request-size limits (e.g.
-  // alysis Supabase edge fn 400s >8 MiB with "Invalid or oversized hosted
-  // request"). Runs after every saver so it only trims genuinely oversized
-  // payloads — the trimmed request still answers, while an oversize 400 would
-  // burn through every account in the pool. Prod-safe by design.
+  // hosts rejecting >8 MiB with "Invalid or oversized hosted request").
+  // Runs after every saver so it only trims genuinely oversized payloads —
+  // the trimmed request still answers, while an oversize 400 would burn
+  // through every account in the pool. Prod-safe by design.
   const sizeGuardStats = enforceRequestSizeLimit(provider, translatedBody, log);
   const sizeGuardLine = formatSizeGuardLog(sizeGuardStats);
   if (sizeGuardLine) log?.info?.("SIZEGUARD", sizeGuardLine);

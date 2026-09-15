@@ -1,7 +1,7 @@
 // Regression: usage-only SSE chunk (no choices/delta, OpenAI-style terminal
 // usage chunk) harus tetap di-capture sebelum di-skip — kalau tidak,
 // finalizeStream() jatuh ke estimasi padahal upstream kirim angka asli.
-// Kasus nyata: Alysis/DeepSeek kadang kirim usage terpisah dari finish chunk.
+// Kasus nyata: DeepSeek kadang kirim usage terpisah dari finish chunk.
 import { describe, it, expect } from "vitest";
 import { createPassthroughStreamWithLogger } from "../../open-sse/utils/stream.js";
 
@@ -12,7 +12,7 @@ function sseLine(obj) {
 async function runPassthrough(lines) {
   let got = null;
   const stream = createPassthroughStreamWithLogger(
-    "alysis", null, "deepseek-v4-flash", "conn-1", { model: "x", messages: [] },
+    "deepseek", null, "deepseek-v4-flash", "conn-1", { model: "x", messages: [] },
     (contentObj, usage) => { got = usage; },
     null,
   );
@@ -48,7 +48,7 @@ describe("passthrough usage-only chunk capture", () => {
     expect(usage.estimated).toBeFalsy();
   });
 
-  it("tetap merge bila usage menempel di finish chunk (kasus Alysis normal)", async () => {
+  it("tetap merge bila usage menempel di finish chunk", async () => {
     const usage = await runPassthrough([
       sseLine({ id: "1", object: "chat.completion.chunk", choices: [{ index: 0, delta: { content: "ok" }, finish_reason: null }] }),
       sseLine({

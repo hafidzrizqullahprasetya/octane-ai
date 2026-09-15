@@ -223,10 +223,8 @@ async function handleSingleModelChat(body, modelStr, clientRawRequest = null, re
 
   const { provider, model } = modelInfo;
 
-  // Pre-send cost guard: tolak request yang estimasi biayanya melampaui batas
-  // aman provider (alySIS). Jauh lebih baik menolak lokal daripada mengirim
-  // lalu kena 429 "Available credits cannot cover" — reservasi gagal itulah
-  // yang menumpuk dan memicu billing-review massal.
+  // Pre-send cost guard: tolak request yang estimasi biayanya melampaui batas aman provider.
+  // Jauh lebih baik menolak lokal daripada mengirim lalu kena 429.
   {
     const qs = getQuotaSafetyConfig(provider);
     if (qs?.maxEstCreditsPerRequest) {
@@ -252,17 +250,7 @@ async function handleSingleModelChat(body, modelStr, clientRawRequest = null, re
   let lastStatus = null;
 
   // ─── Provider-level transient backoff ──────────────────────────────────────
-  // Episode billing Alysis bersifat TRANSIENT: 429/503 "cannot cover / billing
-  // review" memukul request yang sama di SEMUA akun selama beberapa detik–
-  // menit, lalu pulih sendiri. Tanpa backoff, loop fallback mem-burst 61 akun
-  // dalam hitungan detik (memperparah review) lalu langsung mengembalikan
-  // error ke klien. Di sini kita MENUNGGU dan MENCOBA LAGI, sehingga klien
-  // sering tidak pernah melihat 429 sama sekali.
-  // Transient Alysis terbukti bisa berlangsung >1 menit (221 error / 7 sukses
-  // dalam 5 menit). 6 wave (~51s) tidak cukup — klien opencode menyerah setelah
-  // 503. Naikkan wave supaya router menahan lebih lama sampai transient lewat:
-  // 14 wave ≈ 2+3+5+8+13+20+20×8 ≈ 3.5 menit. Klien jarang melihat error.
-  const PROVIDER_RETRY = { alysis: { maxWaves: 14, baseDelayMs: 2000, maxDelayMs: 20000 } };
+  const PROVIDER_RETRY = {};
   const retryCfg = PROVIDER_RETRY[provider] || null;
   const isBillingTransient = (status, err) => {
     if (status !== 429 && status !== 503) return false;
@@ -288,7 +276,7 @@ async function handleSingleModelChat(body, modelStr, clientRawRequest = null, re
         return errorResponse(HTTP_STATUS.NOT_FOUND, `No active credentials for provider: ${provider}`);
       }
       // Semua akun sudah dicoba untuk request ini. Kalau penyebabnya transient
-      // billing (alySIS), jangan langsung gagal — tunggu lalu coba wave baru.
+      // billing, jangan langsung gagal — tunggu lalu coba wave baru.
       if (retryCfg && isBillingTransient(lastStatus, lastError) && wave < retryCfg.maxWaves) {
         wave++;
         const delay = Math.min(retryCfg.baseDelayMs * Math.pow(1.6, wave - 1), retryCfg.maxDelayMs);
@@ -401,8 +389,7 @@ async function handleSingleModelChat(body, modelStr, clientRawRequest = null, re
       lastError = result.error;
       lastStatus = result.status;
       // Circuit-breaker: kalau error transient billing yang SAMA beruntun di
-      // banyak akun, hentikan burst lebih awal — langsung backoff daripada
-      // mem-burst seluruh 61 akun (yang memperparah review Alysis).
+      // banyak akun, hentikan burst lebih awal — langsung backoff.
       if (retryCfg && isBillingTransient(result.status, result.error) && excludeConnectionIds.size >= 6) {
         log.warn("CHAT", `${provider} | circuit-breaker: ${excludeConnectionIds.size} akun beruntun kena transient billing → stop burst, masuk backoff`);
         excludeConnectionIds.clear(); // anggap "sudah coba semua" → memicu wave backoff
