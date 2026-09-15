@@ -69,10 +69,8 @@ export const ERROR_RULES = [
   { text: "no credentials",           cooldownMs: COOLDOWN.long },
   { text: "request not allowed",      cooldownMs: COOLDOWN.short },
   { text: "improperly formed request", cooldownMs: COOLDOWN.long },
-  // Alysis 502: upstream (DeepSeek host di balik edge fn) sesekali menolak dan
-  // menyuruh retry — akunnya sendiri sehat (akun lain di IP sama lolos, dan
-  // akun yang sama sukses di request berikutnya). Soft fallback: pindah akun
-  // untuk request ini saja, TANPA lock / testStatus unavailable.
+  // Upstream temporary rejection: akunnya sendiri sehat tapi upstream sesekali menolak.
+  // Soft fallback: pindah akun untuk request ini saja, TANPA lock / testStatus unavailable.
   { text: "upstream rejected the request", noLock: true },
   { text: "rate limit",               backoff: true },
   { text: "too many requests",        backoff: true },
@@ -83,12 +81,8 @@ export const ERROR_RULES = [
   // seconds — lock long immediately. Mirrors MAX_RATE_LIMIT_COOLDOWN_MS.
   { text: "credits exhausted",        cooldownMs: 30 * 60 * 1000 },
   { text: "insufficient credits",     cooldownMs: 30 * 60 * 1000 },
-  // Alysis billing-hold states: "Available credits cannot cover this request"
-  // / "Hosted billing requires review" / "Usage reconciliation is pending".
-  // Ini BUKAN rate-limit per menit — akun sedang di-hold reservasi/billing
-  // di sisi gateway. Kalau cuma di-lock 2 detik lalu langsung di-burst ke
-  // akun berikutnya, semua akun ikut di-flag. Lock panjang supaya akun yang
-  // di-hold tidak terus-terusan dipukul (memperparah review).
+  // Gateway billing-hold states: akun sedang di-hold reservasi/billing di sisi gateway.
+  // Lock panjang supaya akun yang di-hold tidak terus-terusan dipukul.
   { text: "available credits cannot cover", cooldownMs: 30 * 60 * 1000, noLock: true },
   { text: "credits cannot cover this request", cooldownMs: 30 * 60 * 1000, noLock: true },
   { text: "billing review",             cooldownMs: 30 * 60 * 1000, noLock: true },

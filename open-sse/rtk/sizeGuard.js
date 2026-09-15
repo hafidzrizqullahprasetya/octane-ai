@@ -1,6 +1,5 @@
 // Payload size guard: keep the outbound request body under a host's request
-// size limit (e.g. alysis Supabase edge fn rejects >8 MiB with
-// "Invalid or oversized hosted request"). Runs AFTER every token-saver, right
+// size limit. Runs AFTER every token-saver, right
 // before dispatch, so it is the last line of defense — it only ever kicks in
 // for genuinely oversized payloads, which makes it safe in production too:
 // a trimmed request still answers; a 400 kills every account in the pool.
@@ -9,8 +8,7 @@
 //   1. Truncate oversized tool-result / text string contents with a marker.
 //   2. Drop whole middle history messages (keep system, first & last turns)
 //      when single-field truncation is not enough.
-// OpenAI chat shape is the pivot format, so this covers the alysis
-// (openai→openai) route; other shapes fall through untouched (fail-open).
+// OpenAI chat shape is the pivot format; other shapes fall through untouched (fail-open).
 
 const MIB = 1024 * 1024;
 
@@ -19,10 +17,7 @@ const MIB = 1024 * 1024;
 // JSON-escape growth (~1.33x worst case for CJK/emoji) so the serialized
 // body stays under the host limit.
 const DEFAULT_MAX_REQUEST_BYTES = 6 * MIB; // vs generic 8 MiB host caps
-const PROVIDER_MAX_REQUEST_BYTES = {
-  // Supabase edge function host limit is 8 MiB for the whole request.
-  alysis: 8 * MIB,
-};
+const PROVIDER_MAX_REQUEST_BYTES = {};
 
 const HEADROOM_FACTOR = 1.2; // JSON-escape + envelope growth headroom
 

@@ -3,7 +3,6 @@ import p0 from "./alicode-intl.js";
 import p1 from "./alicode.js";
 import p2 from "./alims-intl.js";
 import p3 from "./alitp-intl.js";
-import p4 from "./alysis.js";
 import p5 from "./anthropic.js";
 import p6 from "./antigravity.js";
 import p7 from "./api-airforce.js";
@@ -130,7 +129,6 @@ const REGISTRY = [
   p1,
   p2,
   p3,
-  p4,
   p5,
   p6,
   p7,

@@ -72,7 +72,7 @@ export function injectReasoningContent({ provider, model, body }) {
   const modelRule = MODEL_RULES.find(r => r.match(model));
   const rule = providerRule || modelRule;
   const nextBody = applyDeepSeekV4ProAlias({ provider, model, body });
-  // Strict-schema hosts (quirk dropReasoningContent, e.g. alysis) reject the
+  // Strict-schema hosts (quirk dropReasoningContent) reject the
   // reasoning_content placeholder with a 400 on multi-turn sessions — never
   // inject there, and strip any echoed-back copy from the history.
   if (PROVIDERS[provider]?.quirks?.dropReasoningContent) {
