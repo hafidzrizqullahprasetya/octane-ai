@@ -135,4 +135,25 @@ describe("OpenCode Free Muse Spark thinking", () => {
       expect(out.max_tokens).toBeUndefined();
     }
   });
+
+  it("infers opencode provider for bare model names without provider prefix", async () => {
+    const { getModelInfoCore } = await import("../../open-sse/services/model.js");
+    await expect(getModelInfoCore("muse-spark-1.3(high)", {})).resolves.toEqual({
+      provider: "opencode",
+      model: "muse-spark-1.3(high)",
+    });
+    await expect(getModelInfoCore("muse-spark-1.3", {})).resolves.toEqual({
+      provider: "opencode",
+      model: "muse-spark-1.3",
+    });
+    await expect(getModelInfoCore("mimo-v2.5-free", {})).resolves.toEqual({
+      provider: "opencode",
+      model: "mimo-v2.5-free",
+    });
+    await expect(getModelInfoCore("laguna-s-2.1-free", {})).resolves.toEqual({
+      provider: "opencode",
+      model: "laguna-s-2.1-free",
+    });
+  });
 });
+
