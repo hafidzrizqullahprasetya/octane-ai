@@ -45,6 +45,7 @@ export default function TokenSaverClient() {
   const [cavemanLevel, setCavemanLevel] = useState("full");
   const [ponytailEnabled, setPonytailEnabled] = useState(false);
   const [ponytailLevel, setPonytailLevel] = useState("full");
+  const [modelPersonaEnabled, setModelPersonaEnabled] = useState(false);
   const [pxpipeEnabled, setPxpipeEnabled] = useState(false);
   const [pxpipeMinChars, setPxpipeMinChars] = useState(25000);
   const [pxpipeStatus, setPxpipeStatus] = useState({
@@ -354,6 +355,11 @@ export default function TokenSaverClient() {
     patchSetting({ ponytailLevel: level });
   };
 
+  const handleModelPersonaEnabled = (value) => {
+    setModelPersonaEnabled(value);
+    patchSetting({ modelPersonaEnabled: value });
+  };
+
   const refreshPxpipeStatus = useCallback(async () => {
     setPxpipeStatus((s) => ({ ...s, loading: true }));
     try {
@@ -430,6 +436,7 @@ export default function TokenSaverClient() {
           setCavemanLevel(data.cavemanLevel || "full");
           setPonytailEnabled(!!data.ponytailEnabled);
           setPonytailLevel(data.ponytailLevel || "full");
+          setModelPersonaEnabled(!!data.modelPersonaEnabled);
           setPxpipeEnabled(!!data.pxpipeEnabled);
           if (typeof data.pxpipeMinChars === "number") setPxpipeMinChars(data.pxpipeMinChars);
           refreshHeadroomStatus();
@@ -738,6 +745,22 @@ export default function TokenSaverClient() {
             <Toggle
               checked={ponytailEnabled}
               onChange={() => handlePonytailEnabled(!ponytailEnabled)}
+            />
+          </div>
+        </div>
+        <div className="flex items-center justify-between pt-4 mt-4 border-t border-border gap-4 flex-wrap">
+          <div className="min-w-0 flex-1">
+            <p className="font-medium">
+              Model Personas
+            </p>
+            <p className="text-sm text-text-muted">
+              Auto-inject system persona prompts for matched models (BOZ-MUSE for Muse Spark & BOZ-GEMINI for Gemini 3.8 Flash)
+            </p>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <Toggle
+              checked={modelPersonaEnabled}
+              onChange={() => handleModelPersonaEnabled(!modelPersonaEnabled)}
             />
           </div>
         </div>
