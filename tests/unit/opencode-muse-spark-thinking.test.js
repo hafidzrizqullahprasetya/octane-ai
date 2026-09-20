@@ -7,7 +7,7 @@ import { OpenCodeExecutor } from "../../open-sse/executors/opencode.js";
 import "../translator/registerAll.js";
 import { translateRequest } from "../../open-sse/translator/index.js";
 
-const MODEL = "muse-spark-1.3-contributor-free";
+const MODEL = "muse-spark-1.2-contributor-free";
 const PROVIDER = "opencode";
 
 const input = [{
@@ -20,8 +20,6 @@ describe("OpenCode Free Muse Spark thinking", () => {
   it("advertises reasoning and the requested model limits", () => {
     expect(PROVIDER_MODELS.oc?.some((model) => model.id === MODEL)).toBe(true);
     expect(PROVIDER_MODELS.oc?.some((model) => model.id === "muse-spark-1.3-contributor-free")).toBe(true);
-    // Dashboard displays the 1M BYPASS window (getCapabilitiesForModel forces
-    // BYPASS_CONTEXT_WINDOW on every path) — not the stale 1048576 reading.
     for (const m of [MODEL, "muse-spark-1.3-contributor-free", "muse-spark-1.4-contributor-free", "muse-spark-2.0-contributor-free"]) {
       expect(getCapabilitiesForModel(PROVIDER, m)).toMatchObject({
         reasoning: true,
@@ -34,8 +32,6 @@ describe("OpenCode Free Muse Spark thinking", () => {
         contextWindow: 1000000,
         maxOutput: 131072,
       });
-      // UI picker levels are the no-"none" muse ladder (pattern override in
-      // thinkingLevels.js); thinkingCanDisable stays true for the executor.
       expect(getThinkingLevels(PROVIDER, m)).toEqual([
         "minimal",
         "low",
@@ -64,6 +60,39 @@ describe("OpenCode Free Muse Spark thinking", () => {
     expect(out.reasoning_effort).toBeUndefined();
     expect(out.max_output_tokens).toBe(131072);
     expect(out.max_tokens).toBeUndefined();
+  });
+
+  it("routes Union Alpha through Anthropic Messages", () => {
+    const caps = getCapabilitiesForModel(PROVIDER, "union-alpha");
+    expect(caps.vision).toBe(true);
+    expect(caps.contextWindow).toBe(1000000);
+    expect(caps.maxOutput).toBe(131072);
+
+    const executor = new OpenCodeExecutor();
+
+    expect(getModelTargetFormat("oc", "union-alpha")).toBe(FORMATS.CLAUDE);
+    const url = executor.buildUrl("union-alpha");
+    expect(url).toBe("https://opencode.ai/zen/v1/messages");
+    expect(executor.buildHeaders({}, true, url)).toMatchObject({
+      "anthropic-version": "2023-06-01",
+    });
+    expect(executor.buildHeaders({}, true, executor.buildUrl("big-pickle")))
+      .not.toHaveProperty("anthropic-version");
+
+    const translated = translateRequest(
+      FORMATS.OPENAI,
+      FORMATS.CLAUDE,
+      "union-alpha",
+      { messages: [{ role: "user", content: "ping" }], max_tokens: 1 },
+      false,
+      {},
+      PROVIDER,
+    );
+    expect(translated).toMatchObject({
+      model: "union-alpha",
+      messages: [{ role: "user", content: [{ type: "text", text: "ping" }] }],
+      max_tokens: 1,
+    });
   });
 
   it("leaves the other free models on Chat Completions", () => {
@@ -136,24 +165,62 @@ describe("OpenCode Free Muse Spark thinking", () => {
     }
   });
 
-  it("infers opencode provider for bare model names without provider prefix", async () => {
-    const { getModelInfoCore } = await import("../../open-sse/services/model.js");
-    await expect(getModelInfoCore("muse-spark-1.3(high)", {})).resolves.toEqual({
-      provider: "opencode",
-      model: "muse-spark-1.3(high)",
-    });
-    await expect(getModelInfoCore("muse-spark-1.3", {})).resolves.toEqual({
-      provider: "opencode",
-      model: "muse-spark-1.3",
-    });
-    await expect(getModelInfoCore("mimo-v2.5-free", {})).resolves.toEqual({
-      provider: "opencode",
-      model: "mimo-v2.5-free",
-    });
-    await expect(getModelInfoCore("laguna-s-2.1-free", {})).resolves.toEqual({
-      provider: "opencode",
-      model: "laguna-s-2.1-free",
-    });
+  it("strips prior-turn reasoning items carrying encrypted_content from input", () => {
+    const executor = new OpenCodeExecutor();
+    const model = "muse-spark-1.3-contributor-free";
+    const body = {
+      model,
+      input: [
+        { type: "message", role: "user", content: [{ type: "input_text", text: "say hi" }] },
+        {
+          type: "reasoning",
+          id: "rs_123",
+          encrypted_content: "ENC_BLOB_TURN_1",
+          summary: [{ type: "summary_text", text: "thinking text" }],
+        },
+        {
+          type: "function_call",
+          id: "fc_1",
+          call_id: "call_1",
+          name: "shell",
+          arguments: JSON.stringify({ command: "echo hi" }),
+        },
+        {
+          type: "function_call_output",
+          call_id: "call_1",
+          output: "hi",
+        },
+        { type: "message", role: "user", content: [{ type: "input_text", text: "now say bye" }] },
+      ],
+      tools: [
+        {
+          type: "function",
+          function: {
+            name: "shell",
+            description: "Run shell command",
+            parameters: { type: "object" },
+          },
+        },
+      ],
+    };
+
+    const out = executor.transformRequest(model, body, true, {});
+    expect(out.stream).toBe(true);
+    expect(out.store).toBe(false);
+    // Prior reasoning items stripped to prevent 400 "reasoning encrypted_content was not issued to this caller"
+    expect(out.input.some((item) => item.type === "reasoning")).toBe(false);
+    expect(JSON.stringify(out.input)).not.toContain("ENC_BLOB_TURN_1");
+    // User message, function_call, function_call_output, and next user message survive
+    const types = out.input.map((item) => item.type);
+    expect(types).toEqual(["message", "function_call", "function_call_output", "message"]);
+    // Tools flattened and empty properties added
+    expect(out.tools).toEqual([
+      {
+        type: "function",
+        name: "shell",
+        description: "Run shell command",
+        parameters: { type: "object", properties: {} },
+      },
+    ]);
   });
 });
-

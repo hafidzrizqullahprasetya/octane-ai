@@ -119,6 +119,8 @@ export const MODEL_CAPABILITIES = {
 
   // DeepSeek's first V4 model with image input; text limits match V4-Flash.
   "deepseek-v4-flash-vision-exp": { vision: true, reasoning: true, thinkingFormat: "deepseek", contextWindow: 1000000, maxOutput: 384000 },
+  "deepseek-v4.1-flash": { vision: true, reasoning: true, thinkingFormat: "deepseek", thinkingEffortSupported: true, contextWindow: 1000000, maxOutput: 131072 },
+  "deepseek-flash": { vision: true, reasoning: true, thinkingFormat: "deepseek", thinkingEffortSupported: true, contextWindow: 1000000, maxOutput: 131072 },
 
   // Qwen plain coder/text (no vision) — registry "vision-model" / "coder-model" aliases
   "vision-model":      { vision: true, reasoning: true, thinkingFormat: "qwen", contextWindow: 1000000 },
@@ -136,7 +138,10 @@ export const MODEL_CAPABILITIES = {
   // the 1M dashboard BYPASS (getCapabilitiesForModel forces BYPASS on every
   // path), so keep the line consistent instead of the stale 1048576.
   "muse-spark-1.3": { vision: true, audioInput: true, videoInput: true, pdf: true, reasoning: true, thinkingFormat: "openai", contextWindow: 1000000, maxOutput: 131072 },
+  "muse-spark-1.2-contributor-free": { vision: true, audioInput: true, videoInput: true, pdf: true, reasoning: true, thinkingFormat: "openai", contextWindow: 1000000, maxOutput: 131072 },
   "muse-spark-1.3-contributor-free": { vision: true, audioInput: true, videoInput: true, pdf: true, reasoning: true, thinkingFormat: "openai", contextWindow: 1000000, maxOutput: 131072 },
+  // OpenCode Free Union Alpha — multimodal (text+vision), 262K context, 131K max output
+  "union-alpha": { vision: true, contextWindow: 262144, maxOutput: 131072 },
 };
 
 const KIRO_GPT_5_6_CAPABILITIES = { vision: true, reasoning: true, search: true, thinkingFormat: "openai", contextWindow: 272000, maxOutput: 128000 };
@@ -381,7 +386,7 @@ export const PATTERN_CAPABILITIES = [
   { pattern: "*glm*",           caps: { reasoning: true, thinkingFormat: "zai", contextWindow: 200000 } },
 
   // ── DeepSeek (thinking.enabled + reasoning_effort; r1 = thinking-only) ─
-  { pattern: "*deepseek-v4*",   caps: { reasoning: true, thinkingFormat: "deepseek", contextWindow: 1000000, maxOutput: 384000 } },
+  { pattern: "*deepseek-v4*",   caps: { vision: true, reasoning: true, thinkingFormat: "deepseek", thinkingEffortSupported: true, contextWindow: 1000000, maxOutput: 384000 } },
   { pattern: "*reasoner*",      caps: { reasoning: true, thinkingFormat: "deepseek", thinkingCanDisable: false, contextWindow: 128000 } },
   { pattern: "*deepseek-r*",    caps: { reasoning: true, thinkingFormat: "deepseek", thinkingCanDisable: false, contextWindow: 128000 } },
   { pattern: "*deepseek-chat*", caps: { contextWindow: 128000 } },

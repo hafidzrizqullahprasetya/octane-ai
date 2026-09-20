@@ -18,9 +18,14 @@ export default {
     headers: {
       "x-opencode-client": "desktop",
     },
+    forceStream: true,
     noAuth: true,
+    quirks: {
+      forceAutoToolChoiceModels: ["muse-spark-1.3-contributor-free"],
+    },
   },
   models: [
+    { id: "muse-spark-1.2-contributor-free", name: "Muse Spark 1.2 Contributor Free", targetFormat: "openai-responses" },
     { id: "muse-spark-1.3(xhigh)", name: "Muse Spark 1.3 (XHigh)", targetFormat: "openai-responses" },
     { id: "muse-spark-1.3(high)", name: "Muse Spark 1.3 (High)", targetFormat: "openai-responses" },
     { id: "muse-spark-1.3(medium)", name: "Muse Spark 1.3 (Medium)", targetFormat: "openai-responses" },
@@ -28,6 +33,7 @@ export default {
     { id: "muse-spark-1.3(minimal)", name: "Muse Spark 1.3 (Minimal)", targetFormat: "openai-responses" },
     { id: "muse-spark-1.3", name: "Muse Spark 1.3 (Default)", targetFormat: "openai-responses" },
     { id: "muse-spark-1.3-contributor-free", name: "Muse Spark 1.3 Contributor Free", targetFormat: "openai-responses" },
+    { id: "union-alpha", name: "Union Alpha Free", targetFormat: "claude" },
 
     { id: "mimo-v2.5-free", name: "MiMo V2.5 Free" },
     { id: "laguna-s-2.1-free", name: "Laguna S 2.1 Free" }

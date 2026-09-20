@@ -363,10 +363,68 @@ export function parseQuotaData(provider, data) {
 
       case "antigravity":
         if (data.quotas) {
-          Object.entries(data.quotas).forEach(([modelKey, quota]) => {
+          const entries = Object.entries(data.quotas);
+          const weeklyKeys = new Set(["gemini_weekly", "claude_gpt_weekly"]);
+          const geminiModels = entries.filter(([k]) => k.startsWith("gemini-") && !k.includes("image"));
+          const claudeModels = entries.filter(([k]) => k.startsWith("claude-"));
+          const imageModels = entries.filter(([k]) => k.includes("image"));
+          const weeklyModels = entries.filter(([k]) => weeklyKeys.has(k));
+          const otherModels = entries.filter(([k]) => !k.startsWith("gemini-") && !k.startsWith("claude-") && !k.includes("image") && !weeklyKeys.has(k));
+
+          if (geminiModels.length > 0) {
+            const rep = geminiModels.reduce((min, cur) =>
+              (cur[1].remainingPercentage ?? 100) < (min[1].remainingPercentage ?? 100) ? cur : min
+            )[1];
+            normalizedQuotas.push({
+              name: "Gemini (Flash / Pro)",
+              modelKey: "gemini",
+              used: rep.used || 0,
+              total: rep.total || 0,
+              resetAt: rep.resetAt || null,
+              remainingPercentage: rep.remainingPercentage,
+            });
+          }
+
+          if (claudeModels.length > 0) {
+            const rep = claudeModels.reduce((min, cur) =>
+              (cur[1].remainingPercentage ?? 100) < (min[1].remainingPercentage ?? 100) ? cur : min
+            )[1];
+            normalizedQuotas.push({
+              name: "Claude (Sonnet / Opus)",
+              modelKey: "claude",
+              used: rep.used || 0,
+              total: rep.total || 0,
+              resetAt: rep.resetAt || null,
+              remainingPercentage: rep.remainingPercentage,
+            });
+          }
+
+          weeklyModels.forEach(([modelKey, quota]) => {
             normalizedQuotas.push({
               name: quota.displayName || modelKey,
-              modelKey: modelKey, // Keep modelKey for sorting
+              modelKey,
+              used: quota.used || 0,
+              total: quota.total || 0,
+              resetAt: quota.resetAt || null,
+              remainingPercentage: quota.remainingPercentage,
+            });
+          });
+
+          imageModels.forEach(([modelKey, quota]) => {
+            normalizedQuotas.push({
+              name: quota.displayName || modelKey,
+              modelKey,
+              used: quota.used || 0,
+              total: quota.total || 0,
+              resetAt: quota.resetAt || null,
+              remainingPercentage: quota.remainingPercentage,
+            });
+          });
+
+          otherModels.forEach(([modelKey, quota]) => {
+            normalizedQuotas.push({
+              name: quota.displayName || modelKey,
+              modelKey,
               used: quota.used || 0,
               total: quota.total || 0,
               resetAt: quota.resetAt || null,
@@ -453,6 +511,8 @@ export function parseQuotaData(provider, data) {
               name,
               used: quota.used || 0,
               total: quota.total || 0,
+              remaining: quota.remaining !== undefined ? quota.remaining : Math.max(0, (quota.total || 100) - (quota.used || 0)),
+              remainingPercentage: quota.remainingPercentage !== undefined ? quota.remainingPercentage : calculatePercentage(quota.used, quota.total),
               resetAt: quota.resetAt || null,
             });
           });
@@ -537,6 +597,8 @@ export function parseQuotaData(provider, data) {
               total: quota.total || 0,
               resetAt: quota.resetAt || null,
               remainingPercentage: quota.remainingPercentage,
+              isCreditBalance: quota.isCreditBalance ?? true,
+              currency: quota.currency || (name.includes("(") ? name.slice(name.indexOf("(") + 1, name.indexOf(")")) : "USD"),
             });
           });
         }
@@ -621,6 +683,18 @@ export function parseQuotaData(provider, data) {
   } catch (error) {
     console.error(`Error parsing quota data for ${provider}:`, error);
     return [];
+  }
+
+  if (provider?.toLowerCase() === "claude") {
+    const CLAUDE_QUOTA_ORDER = {
+      "session (5h)": 0,
+      "weekly (7d)": 1,
+      "weekly fable (7d)": 2,
+      "weekly opus (7d)": 3,
+      "weekly sonnet (7d)": 4,
+    };
+    normalizedQuotas.sort((a, b) => (CLAUDE_QUOTA_ORDER[a.name] ?? 99) - (CLAUDE_QUOTA_ORDER[b.name] ?? 99));
+    return normalizedQuotas;
   }
 
   // Sort quotas according to PROVIDER_MODELS order

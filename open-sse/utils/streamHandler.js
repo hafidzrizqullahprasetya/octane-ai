@@ -191,6 +191,7 @@ export function createDisconnectAwareStream(transformStream, streamController, o
  */
 export function pipeWithDisconnect(providerResponse, transformStream, streamController, onAbortTerminal = null, stallTimeoutMs = STREAM_STALL_TIMEOUT_MS) {
   let stallTimer = null;
+  let abortMessage = "upstream connection lost";
   const clearStall = () => {
     if (stallTimer) { clearTimeout(stallTimer); stallTimer = null; }
   };
@@ -198,6 +199,7 @@ export function pipeWithDisconnect(providerResponse, transformStream, streamCont
     clearStall();
     stallTimer = setTimeout(() => {
       stallTimer = null;
+      abortMessage = "stream stall timeout";
       streamController.handleError?.(new Error("stream stall timeout"));
       streamController.abort?.();
     }, stallTimeoutMs);
@@ -233,7 +235,7 @@ export function pipeWithDisconnect(providerResponse, transformStream, streamCont
   return createDisconnectAwareStream(
     { readable: transformedBody, writable: { getWriter: () => ({ abort: () => Promise.resolve() }) } },
     wrappedController,
-    onAbortTerminal
+    onAbortTerminal ? () => onAbortTerminal(abortMessage) : null
   );
 }
 
