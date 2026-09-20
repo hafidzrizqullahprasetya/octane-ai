@@ -19,10 +19,10 @@ const EXT_TO_MIME = {
   ".webp": "image/webp",
   ".gif": "image/gif",
   ".bmp": "image/bmp",
-  ".svg": "image/svg+xml",
 };
 
-const IMAGE_REF_GLOBAL_RE = /(?:^|[\s"'`@\[\(<])([^\s"'`\(\)\[\]<>]+\.(?:png|jpe?g|webp|gif|bmp|svg))(?:[\s"'`\]\)>]|$)/gi;
+// ponytail: match raster image extensions only; svg/vector is not supported by LLM vision models
+const IMAGE_REF_GLOBAL_RE = /(?:^|[\s"'`@\[\(<])([^\s"'`\(\)\[\]<>]+\.(?:png|jpe?g|webp|gif|bmp))(?:[\s"'`\]\)>]|$)/gi;
 
 export async function readLocalImageAsBase64(filePath) {
   if (!filePath || typeof filePath !== "string") return null;
@@ -137,8 +137,12 @@ export async function inlineLocalImages(body) {
 
   for (const msg of body.messages) {
     if (!msg) continue;
+    // ponytail: ONLY inline local image references from USER messages.
+    // Tool output (bash stdout, git logs, cat files) and assistant messages
+    // mention file paths in code/logs, which must never be parsed as image uploads.
+    if (msg.role !== "user") continue;
     if (typeof msg.content === "string") {
-      const matches = extractImageCandidates(msg.content);
+      const matches = extractImageCandidates(msg.content).slice(0, 5);
       if (matches.length > 0) {
         const found = [];
         for (const candidate of matches) {

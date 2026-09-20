@@ -65,6 +65,12 @@ export const ERROR_RULES = [
   { text: "oversized hosted request", noFallback: true },
   { text: "8 mib maximum",            noFallback: true },
   { text: "invalid or oversized",      noFallback: true },
+  // ponytail: deterministic context-limit and image errors must not trigger account fallback/lock
+  { text: "token count exceeds",       noFallback: true },
+  { text: "exceeds the maximum number of tokens", noFallback: true },
+  { text: "invalid_image_data",        noFallback: true },
+  { text: "replace the image",         noFallback: true },
+  { text: "11135",                     noFallback: true },
   // --- Text-based rules (checked after no-fallback, order = priority) ---
   { text: "no credentials",           cooldownMs: COOLDOWN.long },
   { text: "request not allowed",      cooldownMs: COOLDOWN.short },
