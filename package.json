@@ -1,6 +1,6 @@
 {
   "name": "octane-ai",
-  "version": "0.5.75",
+  "version": "0.5.81",
   "description": "Octane AI web dashboard",
   "private": true,
   "scripts": {
@@ -15,7 +15,9 @@
     "start:bun": "bun --bun next start --port 20127",
     "cli:pack": "npm --prefix cli run pack:cli",
     "cli:publish": "npm --prefix cli run publish:cli",
-    "release": "node scripts/release-to-main.mjs"
+    "release": "node scripts/release-to-main.mjs",
+    "verify:lockfile": "node scripts/verify-lockfile-npm10.mjs",
+    "lockfile:regen": "npx -y npm@10.9.8 install --package-lock-only"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
