@@ -14,7 +14,7 @@ Octane AI / 9Router adalah proxy AI dan dashboard terpadu yang mendukung berbaga
 - **Jalankan unit & translator test**: `npx vitest run --config tests/vitest.config.js`
 - **Development server**: `npm run dev`
 - **Build**: `npm run build`
-- **Linter**: `npm run lint` (atau `npx eslint .`)
+- **Linter**: `npx eslint .`
 
 ## Agent skills
 
