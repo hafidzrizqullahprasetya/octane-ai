@@ -25,6 +25,7 @@ export default {
     globals: true,
     include: ["tests/**/*.test.js"],
     exclude: ["**/node_modules/**", "**/.claude/**", "**/.worktrees/**", "**/dist/**"],
+    setupFiles: [resolve(here, "tests/setup/isolateDataDir.js")],
     maxConcurrency: 60,
     silent: false,
   },

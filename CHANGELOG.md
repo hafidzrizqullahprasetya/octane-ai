@@ -1,3 +1,46 @@
+# v0.5.81 (2026-09-20)
+
+## Features
+- **Personas & RTK**: add per-model persona injector (`BOZ-GEMINI` & `BOZ-MUSE`) in RTK with UI toggle controls on dashboard
+- **Agent Skills**: configure Matt Pocock agent engineering skills framework (`AGENTS.md`, `docs/agents/`, `CONTEXT.md`, `docs/adr/`)
+- **Architecture**: add comprehensive system architecture documentation (`docs/ARCHITECTURE.md`)
+- **CodeBuddy**: auto monthly quota detection and account-level lock
+- **Models**: add vision capabilities for `glm-5.3`, `kimi-k3`, and `deepseek-v4.1-flash`
+- **OpenCode**: infer opencode provider for bare `muse-`, `mimo-`, `laguna-`, and `ox-` models; expose `oc/` models in `/v1/models`
+- **Quota & Billing**: circuit-breaker with wave backoff (14 waves, ~3.5m) and `noLock` soft-fallback on transient upstream errors
+- **Quota**: calculate burn per connectionId rather than global key pooling
+- **UI**: standalone Octane Order page + sidebar entry
+
+## Fixes
+- **Prefetch & Images**: restrict local image inlining to user role and prevent 400 fallback cascade
+- **Capabilities**: strip thinking suffix before capability resolution while preserving explicit suffixes for model routing
+- **OpenCode Responses**: eliminate double-translation latency and add `freebuff` end_turn filter
+- **Reliability**: retry Cloudflare 524 and retryable HTTP statuses in opencode Responses path
+- **Login**: remove security risk warnings and default password hints from login page
+- **Cleanup**: remove retired providers (Experiential Labs, Octane ZAI) and orphaned models
+
+# v0.5.69 (2026-09-05)
+
+## Features
+- **Codex**: add GPT 6.0 Astra (`gpt-6-astra`) with vision, thinking and search capabilities
+- **Usage**: add Claude Fable quota tracker support with weekly window normalization (`weekly fable (7d)`)
+- **Dashboard**: group Antigravity Gemini and Claude quotas in Quota Tracker, prune stale hidden keys
+- **OpenCode Go**: add `muse-spark-1.3-contributor` model and support parallel tool calls on Responses path (#3819)
+- **Providers & Models**: align CodeBuddy-CN catalog/capabilities with server config; add GPT-5.6 Sol, Terra, Luna image aliases on Codex (#3806); refresh Qoder catalog with capability mapping and image pass-through
+- **CLI tools**: replace Copilot MITM with VS Code extension setup guide
+- **Gemini**: persist and replay `thoughtSignature` scoped by session namespace
+
+## Fixes
+- **Claude**: normalize adaptive auto effort (`output_config.effort`) (#3792)
+- **Antigravity**: prevent Google anti-abuse rate limits during multi-account refresh (#3813)
+- **Anthropic-compatible**: forward Claude beta flags to nodes fronting Anthropic (#3797)
+- **Dashboard**: dynamic mode label for local/remote detection (#3801)
+- **Codex**: format reset credit API errors cleanly (#3778)
+- **Security**: guard cowork MCP tools probe against SSRF (#3783)
+- **OpenCode Go**: track OpenCode Go quota (#3791) and send stable session headers (#3800)
+- **Logger**: suppress noisy background token refresh logs
+- **CLI**: export packed `.tgz` directly into workspace root instead of parent directory
+
 # v0.5.65 (2026-09-03)
 
 ## Features

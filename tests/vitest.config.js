@@ -12,7 +12,7 @@ export default defineConfig({
     // Redirect DATA_DIR to a throwaway temp dir so route-level tests that call
     // createProviderConnection never touch the user's real ~/.9router DB.
     // RUN_REAL=1 or an explicit DATA_DIR opts out (see setup/isolateDataDir.js).
-    setupFiles: ["./setup/isolateDataDir.js"],
+    setupFiles: [resolve(__dirname, "setup/isolateDataDir.js")],
     // Don't scan into git worktrees nested under .claude/ — they carry their
     // own copies of the test files but lack an installed node_modules (open-sse,
     // etc.), which makes provider imports fail during collection.
