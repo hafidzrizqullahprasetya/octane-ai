@@ -1,6 +1,6 @@
 {
   "name": "octane-ai",
-  "version": "0.5.81",
+  "version": "0.5.85",
   "description": "Octane AI web dashboard",
   "private": true,
   "scripts": {

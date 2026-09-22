@@ -123,6 +123,8 @@ import p123 from "./xiaomi-tokenplan.js";
 import p124 from "./xquik.js";
 import p125 from "./youcom.js";
 import p126 from "./zed.js";
+import p68z from "./opencode-zen.js";
+import p127 from "./qoder-cn.js";
 
 const REGISTRY = [
   p0,
@@ -190,8 +192,10 @@ const REGISTRY = [
   p64,
   p65,
   p66,
+  p127,
   p67,
   p68,
+  p68z,
   p69,
   p70,
   p71,
