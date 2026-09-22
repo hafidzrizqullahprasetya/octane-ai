@@ -15,7 +15,8 @@ import {
   generateRequestId,
   generateSessionId,
   generateProjectId,
-  cleanJSONSchemaForAntigravity
+  cleanJSONSchemaForAntigravity,
+  normalizeGeminiContents
 } from "../formats/gemini.js";
 import { deriveSessionId, toNumericSessionId } from "../../utils/sessionManager.js";
 import { ROLE, GEMINI_ROLE, OPENAI_BLOCK, CLAUDE_BLOCK } from "../schema/index.js";
@@ -35,26 +36,6 @@ function sanitizeGeminiFunctionName(name) {
   return sanitized.substring(0, 64);
 }
 
-function normalizeGeminiContents(contents) {
-  const out = [];
-  for (const c of contents || []) {
-    if (!c?.role || !Array.isArray(c.parts) || c.parts.length === 0) continue;
-    const last = out.at(-1);
-    if (last?.role === c.role) {
-      const lastHasFn = last.parts.some(p => p.functionResponse);
-      const curHasMedia = c.parts.some(p => p.inlineData || p.fileData);
-      if (lastHasFn && curHasMedia) {
-        out.push({ role: GEMINI_ROLE.MODEL, parts: [{ text: "File loaded into visual context." }] });
-        out.push({ ...c, parts: [...c.parts] });
-      } else {
-        last.parts.push(...c.parts);
-      }
-    } else {
-      out.push({ ...c, parts: [...c.parts] });
-    }
-  }
-  return out;
-}
 
 // Core: Convert OpenAI request to Gemini format (base for all variants)
 function openaiToGeminiBase(model, body, stream, signature = DEFAULT_THINKING_AG_SIGNATURE, sessionId = null) {
@@ -173,9 +154,10 @@ function openaiToGeminiBase(model, body, stream, signature = DEFAULT_THINKING_AG
           }
 
           // Check if there are actual tool responses in the next messages
-          const hasActualResponses = toolCallIds.some(fid => toolResponses[fid]);
+          const isIntermediate = i < body.messages.length - 1;
+          const hasActualResponses = toolCallIds.some(fid => toolResponses[fid] !== undefined);
 
-          if (hasActualResponses) {
+          if (hasActualResponses || isIntermediate) {
             const toolParts = [];
             for (const fid of toolCallIds) {
               const toolMsg = toolResponses[fid];
@@ -317,10 +299,11 @@ function wrapInCloudCodeEnvelope(model, geminiCLI, credentials = null, isAntigra
     }
   };
 
-  // Antigravity specific fields
-  if (isAntigravity) {
-    envelope.requestType = "agent";
-  } else {
+  // Antigravity specific fields.
+  // NOTE: the official Antigravity client omits `requestType` entirely on the
+  // agent (chat) path. Sending `requestType: "agent"` triggers a detail-free
+  // 429 RESOURCE_EXHAUSTED even with quota available.
+  if (!isAntigravity) {
     // Keep safetySettings for Gemini CLI
     envelope.request.safetySettings = geminiCLI.safetySettings;
   }
@@ -343,7 +326,8 @@ function wrapInCloudCodeEnvelopeForClaude(model, claudeRequest, credentials = nu
     model: model,
     userAgent: "antigravity",
     requestId: `agent-${generateUUID()}`,
-    requestType: "agent",
+    // NOTE: official Antigravity client omits `requestType` on the agent (chat)
+    // path — see the note in wrapInCloudCodeEnvelope() above.
     request: {
       sessionId: toNumericSessionId(credentials?._clientSessionId) || deriveSessionId(credentials?.email || credentials?.connectionId),
       contents: [],

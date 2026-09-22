@@ -11,6 +11,28 @@ const OPTIONAL_FIELDS = [
   "proxyRotationStrategy", "proxyPoolIds",
 ];
 
+const MODEL_LOCK_PREFIX = "modelLock_";
+
+function resetHealthStateOnActivation(existing, patch) {
+  if (patch?.testStatus !== "active") return patch;
+
+  const normalized = {
+    ...patch,
+    testStatus: "active",
+    lastError: Object.hasOwn(patch, "lastError") ? patch.lastError : null,
+    lastErrorAt: Object.hasOwn(patch, "lastErrorAt") ? patch.lastErrorAt : null,
+    errorCode: null,
+    rateLimitedUntil: null,
+    backoffLevel: 0,
+  };
+
+  for (const key of Object.keys(existing || {})) {
+    if (key.startsWith(MODEL_LOCK_PREFIX)) normalized[key] = null;
+  }
+
+  return normalized;
+}
+
 function rowToConn(row) {
   if (!row) return null;
   const extra = parseJson(row.data, {});
@@ -148,22 +170,16 @@ export async function createProviderConnection(data) {
     // access_token: never dedup — user manages duplicates manually
 
     if (existing) {
-      // Re-auth (OAuth poll/exchange) returns providerSpecificData:{} from
-      // mapTokens — a wholesale replace would wipe UI-configured proxy
-      // (proxyPoolIds/proxyRotationStrategy) on every re-login. Deep-merge
-      // so fresh tokens apply but existing psd keys survive unless the
-      // incoming object explicitly overrides them.
+      const normalized = resetHealthStateOnActivation(existing, data);
       const merged = {
         ...existing,
-        ...data,
+        ...normalized,
         providerSpecificData: {
           ...(existing.providerSpecificData || {}),
-          ...(data.providerSpecificData || {}),
+          ...(normalized.providerSpecificData || {}),
         },
         updatedAt: now,
       };
-      // Drop the key entirely when both sides are empty (matches create path
-      // + cleanupProviderConnections semantics).
       if (Object.keys(merged.providerSpecificData).length === 0) {
         delete merged.providerSpecificData;
       }
@@ -215,7 +231,8 @@ export async function updateProviderConnection(id, data) {
     const row = db.get(`SELECT * FROM providerConnections WHERE id = ?`, [id]);
     if (!row) { result = null; return; }
     const existing = rowToConn(row);
-    const merged = { ...existing, ...data, updatedAt: new Date().toISOString() };
+    const normalized = resetHealthStateOnActivation(existing, data);
+    const merged = { ...existing, ...normalized, updatedAt: new Date().toISOString() };
     upsert(db, merged);
     if (data.priority !== undefined) reorderInTx(db, existing.provider);
     result = merged;

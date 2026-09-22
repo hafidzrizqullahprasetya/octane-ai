@@ -25,6 +25,7 @@ export default {
     },
   },
   models: [
+    // Endpoint formats differ per model, so declare non-chat models explicitly.
     { id: "muse-spark-1.2-contributor-free", name: "Muse Spark 1.2 Contributor Free", targetFormat: "openai-responses" },
     { id: "muse-spark-1.3(xhigh)", name: "Muse Spark 1.3 (XHigh)", targetFormat: "openai-responses" },
     { id: "muse-spark-1.3(high)", name: "Muse Spark 1.3 (High)", targetFormat: "openai-responses" },
@@ -34,10 +35,18 @@ export default {
     { id: "muse-spark-1.3", name: "Muse Spark 1.3 (Default)", targetFormat: "openai-responses" },
     { id: "muse-spark-1.3-contributor-free", name: "Muse Spark 1.3 Contributor Free", targetFormat: "openai-responses" },
     { id: "union-alpha", name: "Union Alpha Free", targetFormat: "claude" },
-
     { id: "mimo-v2.5-free", name: "MiMo V2.5 Free" },
-    { id: "laguna-s-2.1-free", name: "Laguna S 2.1 Free" }
+    { id: "laguna-s-2.1-free", name: "Laguna S 2.1 Free" },
+    { id: "jev-1.13-free", name: "Jev 1.13 Free", kind: "systemone" },
   ],
+  serviceKinds: ["llm", "systemone"],
+  systemoneConfig: {
+    baseUrl: "https://opencode.ai/zen/v1/systemone",
+    headers: {
+      "x-opencode-client": "desktop",
+      "User-Agent": "opencode/1.18.31",
+    },
+  },
   modelsFetcher: { url: "https://opencode.ai/zen/v1/models", type: "opencode-free" },
   passthroughModels: true,
 };
