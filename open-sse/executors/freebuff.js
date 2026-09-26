@@ -40,6 +40,17 @@ const SESSION_DEFAULT_TTL_MS = 60 * 60 * 1000; // active sessions live ~1h
 // before retrying (mirrors the CLI's FreebuffGateErrorKind statuses).
 const SESSION_STALE_CODES = new Set([428, 409, 410]);
 
+// Models the backend runs as a CAPACITY-LIMITED OFFER rather than a standing
+// picker row. Claude Fable 5.1 is not in the client catalog at all: the server
+// advertises it per-session-response (`limitedModelOffers`) only while its
+// shared wave pool has sessions left, and a request without a live offer is
+// refused. A claim must therefore peek at the current offers first instead of
+// POSTing blind (mirrors the CLI: the "Claude Fable 5 · N of M left" row only
+// renders from that payload). Offer state is per-account and cached briefly —
+// the pool can reopen at any time, so a closed offer must NOT set a long
+// cooldown.
+const OFFER_GATED_MODELS = new Set(["anthropic/claude-fable-5.1"]);
+const OFFER_CACHE_TTL_MS = 45_000;
 // The free tier rejects requests whose first system message doesn't open with
 // the canonical Freebuff CLI root prompt (server gate
 // requestHasFreebuffSystemMarker → 403 free_mode_cli_required). The check is a
@@ -307,18 +318,9 @@ function normalizeFreebuffModel(model) {
 // base3, and the backend can return 404 "No endpoints found" for the old
 // base2 roots during the transition).
 //
-// Multimodal per CLI freebuff/common/src/constants/freebuff-models.ts
-// (`multimodal` flag per model):
-//   vision native : gpt-5.6-luna, glm-5.3-flash (image+video in), mimo-v2.5
-//   text-only     : deepseek-v4-flash, solar-pro4, muse-spark-1.3
-// (Muse images are backend-described at the completions layer, not native
-// vision — so no client-side strip; the stripping for truly text-only models
-// happens in chatCore via capabilities.js, not here.)
-// Context windows (CLI FREEBUFF_MODEL_CONTEXT_WINDOWS, measured from real
-// provider rejections; dashboard display is forced to 1M by the capabilities
-// BYPASS anyway): luna 1M, deepseek-flash 1048576, mimo 1M, glm-flash 1M
-// (131072 max output), solar 500k, muse-spark 1M.
 const FREEBUFF_VISION_MODELS = new Set([
+  "openai/gpt-6-luna",
+  "gpt-6-luna",
   "openai/gpt-5.6-luna",
   "gpt-5.6-luna",
   "mimo/mimo-v2.5",
@@ -327,6 +329,8 @@ const FREEBUFF_VISION_MODELS = new Set([
   "glm-5.3-flash",
 ]);
 const FREEBUFF_MODEL_CONTEXT_WINDOWS = {
+  "openai/gpt-6-luna": 1000000,
+  "gpt-6-luna": 1000000,
   "openai/gpt-5.6-luna": 1000000,
   "gpt-5.6-luna": 1000000,
   "deepseek/deepseek-v4-flash": 1048576,
@@ -337,6 +341,11 @@ const FREEBUFF_MODEL_CONTEXT_WINDOWS = {
   "glm-5.3-flash": 1000000,
   "upstage/solar-pro4": 500000,
   "solar-pro4": 500000,
+  "upstage/solar-mini4": 500000,
+  "solar-mini4": 500000,
+  "stealth/space-bunny-alpha": 1000000,
+  "space-bunny-alpha": 1000000,
+  "meta/muse-spark-1.2-contributor": 1000000,
   "meta/muse-spark-1.3-contributor": 1000000,
   "meta/muse-spark-1.3": 1000000,
   "muse-spark-1.3-contributor": 1000000,
@@ -348,15 +357,21 @@ const FREE_ROOT_AGENT_BY_MODEL = {
   "mimo/mimo-v2.5": "base3-free-mimo",
   "mimo-v2.5": "base3-free-mimo",
   "openai/gpt-5.6-luna": "base3-free-luna",
+  "openai/gpt-5.6-luna": "base3-free-luna",
   "gpt-5.6-luna": "base3-free-luna",
+  "openai/gpt-6-luna": "base3-free-luna-6",
+  "gpt-6-luna": "base3-free-luna-6",
+  "z-ai/glm-5.2": "base3-free-glm",
   "z-ai/glm-5.3-flash": "base3-free-glm-5-3-flash",
   "glm-5.3-flash": "base3-free-glm-5-3-flash",
   "upstage/solar-pro4": "base3-free-solar-pro4",
   "solar-pro4": "base3-free-solar-pro4",
-  "meta/muse-spark-1.3-contributor": "base3-free-muse-spark-1-3",
-  "meta/muse-spark-1.3": "base3-free-muse-spark-1-3",
-  "muse-spark-1.3-contributor": "base3-free-muse-spark-1-3",
-  "muse-spark-1.3": "base3-free-muse-spark-1-3",
+  "upstage/solar-mini4": "base3-free-solar-mini4",
+  "solar-mini4": "base3-free-solar-mini4",
+  "stealth/space-bunny-alpha": "base3-free-space-bunny-alpha",
+  "space-bunny-alpha": "base3-free-space-bunny-alpha",
+  "meta/muse-spark-1.2-contributor": "base3-free-muse-spark",
+  "anthropic/claude-fable-5.1": "base3-free-fable",
 };
 
 // Per-token+model session cache (in-memory; keyed so multi-account setups
@@ -622,6 +637,77 @@ async function requestSession(token, model, proxyOptions, hasRetriedUnlock = fal
   throw new Error(`Freebuff session rejected (${status || response.status}): ${JSON.stringify(data).slice(0, 200)}`);
 }
 
+// Fetch the account's current limited-model offers (GET — never claims).
+// Cached per token for OFFER_CACHE_TTL_MS: the wave pool changes on server
+// time, not ours, and a claim only needs to know "is it open right now".
+async function fetchSessionOffers(token, proxyOptions) {
+  const now = Date.now();
+  const cached = offerCache.get(token);
+  if (cached && now - cached.fetchedAt < OFFER_CACHE_TTL_MS) {
+    return cached.offers;
+  }
+
+  const response = await fetchWithNetworkRetry(`${sessionOrigin()}${SESSION_PATH}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "User-Agent": "codebuff-cli/0.0.138",
+      Accept: "application/json",
+    },
+  }, proxyOptions);
+
+  let data = {};
+  try { data = await response.json(); } catch { data = {}; }
+
+  if (response.status === 401) {
+    const err = new Error("Freebuff session auth failed (401) — re-login in the dashboard");
+    err.status = 401;
+    throw err;
+  }
+  if (!response.ok) {
+    const err = new Error(`Freebuff offer check failed: ${response.status} ${JSON.stringify(data).slice(0, 200)}`);
+    err.status = response.status;
+    throw err;
+  }
+
+  const offers = Array.isArray(data?.limitedModelOffers)
+    ? data.limitedModelOffers.filter((o) => o && typeof o.model === "string")
+    : [];
+  offerCache.set(token, { fetchedAt: now, offers });
+  return offers;
+}
+
+// For an offer-gated model (Fable), refuse the claim BEFORE the POST when the
+// backend is not currently advertising it. Returns the matching offer when the
+// claim may proceed. Throws a plain Error (no JSON tail) so the executor's
+// sessionGateFromError stays null and the cooldown maps are never touched —
+// a closed offer is availability, not a lock, and the pool can reopen any time.
+async function guardOfferClaim(token, model, proxyOptions) {
+  if (!OFFER_GATED_MODELS.has(model)) return null;
+
+  const offers = await fetchSessionOffers(token, proxyOptions);
+  const offer = offers.find((o) => o.model === model);
+  if (!offer || Number(offer.remaining) <= 0) {
+    const err = new Error(
+      `Claude Fable 5.1 is not being offered right now — it is a capacity-limited trial served in waves, and freebuff's shared Fable pool is currently empty. Watch the official freebuff CLI for the "Claude Fable 5 · N of M left" row, or retry later.`,
+    );
+    err.status = 409;
+    err.code = "offer_closed";
+    throw err;
+  }
+  const userLeft = Number(offer.userRemaining);
+  if (Number.isFinite(userLeft) && userLeft <= 0) {
+    const resetAt = Date.parse(offer.userResetAt || "");
+    const err = new Error(
+      `Your Freebuff account has used its Claude Fable 5.1 sessions for today (pool: ${offer.remaining} of ${offer.total} left)${Number.isFinite(resetAt) ? ` — next slot ${new Date(resetAt).toLocaleString()}` : ""}.`,
+    );
+    err.status = 409;
+    err.code = "offer_user_capped";
+    if (Number.isFinite(resetAt)) err.resetsAtMs = resetAt;
+    throw err;
+  }
+  return offer;
+}
 async function ensureSession(token, model, proxyOptions, force = false) {
   const key = sessionCacheKey(token, model);
   // Lazy prune: drop stale rows so the cache never accumulates expired entries.

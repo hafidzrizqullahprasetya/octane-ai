@@ -35,7 +35,7 @@ export default {
     website: "https://freebuff.com",
     notice: {
       signupUrl: "https://freebuff.com",
-      text: "Freebuff / Codebuff multi-account pool with custom thinking levels.",
+      text: "Free ad-supported coding agent by Codebuff. Sign in with your Freebuff/Codebuff account via browser login. Each model is priced in Freebucks per hour of session, charged once when the session starts. Your daily Freebucks refill at midnight Pacific; the wallet keeps what you buy or earn. Free tier is ad-supported and limited in some regions (limited mode: 6 x 1-hour sessions/day); full mode runs in select countries. ⚠️ One account has ONE active session locked to ONE model — requesting a different model while a session is active returns 'model_locked' (409); wait for the session to expire (~1h) instead of forcing re-claims (ToS: one account per person, human-initiated sessions only). DeepSeek V4.1 Flash closes daily ~00:00–10:00 UTC (peak window) — MiMo is the fallback then.",
     },
   },
   category: "free",
@@ -63,29 +63,51 @@ export default {
   features: {
     usage: true,
   },
-  // Active & verified OctaneAI / Freebuff models with all thinking endpoints
-  // (6-model allowlist — mirrors executors/freebuff.js FREE_ROOT_AGENT_BY_MODEL)
-  // Default-only: the fb/ path strips thinking suffixes and drops
-  // reasoning_effort (base3 agents own reasoning server-side), so suffixed
-  // variants would be cosmetic — one entry per model, server default applies.
+  // Mirrors the Freebuff waiting-room picker (upstream FREEBUFF_MODELS) as of
+  // 2026-09-25. NO per-model prices live here: Freebucks pricing is
+  // server-authoritative — the session response's `freebucks` block carries
+  // `prices` (model → Freebucks/hr) plus an announced `priceChanges` schedule
+  // (promos like Solar Pro 4's Labor Day run expire server-side; see
+  // services/usage/freebuff.js which folds both in, exactly like the upstream
+  // CLI which hardcodes no number). Plus the capacity-limited Fable trial.
+  // deepseek-v4-pro and minimax-m3 were withdrawn upstream (2026-08-26 /
+  // 2026-08-20) and ox-alpha (2026-08-27) never stuck — none are claimable anymore.
+  // openai/gpt-5.6-luna was WITHDRAWN 2026-09-22 and PAUSED 2026-09-24
+  // (dead pick) — replaced by openai/gpt-6-luna (same slot, flex lane, beta).
+  // upstage/solar-mini4 joined 2026-09-23 (Pro 4's slot; Pro 4 returned beside
+  // it 2026-09-25) and stealth/space-bunny-alpha joined 2026-09-23 as a beta
+  // stealth row (anonymous provider retains prompts).
+  // google/gemini-3.8-flash is back since 2026-09-21 but PAID-ONLY
+  // (plan-gated, LOCKED without a plan) — intentionally omitted, the server
+  // refuses free admission on it.
+  // z-ai/glm-5.2 is a referral reward (not a free pick), luna-es / kimi-k3-eco
+  // are god-only rows, mimo-v2.6-pro is premium full-access-only, and the
+  // `-max` variants are provisioned per-account — all intentionally omitted.
+  // Fable is a capacity-limited WAVE trial: sessions only claim while the
+  // backend advertises `anthropic/claude-fable-5.1` via limitedModelOffers on
+  // the session status (the executor auto-checks before claiming); the model is
+  // otherwise refused.
+  // meta/muse-spark-1.3-contributor was withdrawn upstream 2026-09-07 (Meta
+  // returns 404 model_not_found on every key) and replaced in the picker by
+  // meta/muse-spark-1.2-contributor — same Contributor terms/pool. 1.3 is
+  // intentionally NOT listed: 9Router has no server-side coercion, so a dead
+  // pick would only fail.
+  // deepseek/deepseek-v4-flash was RENAMED upstream 2026-09-10 to DeepSeek
+  // V4.1 Flash (same undated wire id, new build) — display label follows.
+  // mimo/mimo-v2.5 now serves MiMo 2.6 Flash under the unchanged wire id
+  // (same move as V4.1) — display label follows.
+  // deepseek/deepseek-v4-flash is `off_peak_only`: CLOSED ~00:00–10:00 UTC
+  // daily (peak window) — a pick then is refused, MiMo is the fallback.
   models: [
-    // 🧠 GPT-5.6 Luna (Vision + Reasoning)
-    { id: "gpt-5.6-luna", name: "GPT-5.6 Luna", upstreamModelId: "openai/gpt-5.6-luna" },
-
-    // ⚡ DeepSeek V4 Flash (High Speed / Night Route)
-    { id: "deepseek-v4-flash", name: "DeepSeek V4 Flash", upstreamModelId: "deepseek/deepseek-v4-flash" },
-
-    // 🌀 MiMo V2.5 (Unlimited Free)
-    { id: "mimo-v2.5", name: "MiMo V2.5", upstreamModelId: "mimo/mimo-v2.5" },
-
-    // 🧪 Z-AI GLM-5.3 Flash (Hero / Unmetered, server-pinned high — Default only)
-    { id: "glm-5.3-flash", name: "GLM-5.3 Flash", upstreamModelId: "z-ai/glm-5.3-flash" },
-
-    // ☀️ Upstage Solar Pro 4
-    { id: "solar-pro4", name: "Solar Pro 4", upstreamModelId: "upstage/solar-pro4" },
-
-    // 🎨 Meta Muse Spark 1.3 (via freebuff; for effort control use ot/muse-spark via opencode)
-    { id: "muse-spark-1.3", name: "Muse Spark 1.3", upstreamModelId: "meta/muse-spark-1.3-contributor" },
+    { id: "z-ai/glm-5.3-flash", name: "GLM 5.3 Flash" },
+    { id: "deepseek/deepseek-v4-flash", name: "DeepSeek V4.1 Flash" },
+    { id: "openai/gpt-6-luna", name: "GPT-6 Luna" },
+    { id: "mimo/mimo-v2.5", name: "MiMo 2.6 Flash" },
+    { id: "upstage/solar-pro4", name: "Solar Pro 4" },
+    { id: "upstage/solar-mini4", name: "Solar Mini 4" },
+    { id: "stealth/space-bunny-alpha", name: "Space Bunny Alpha" },
+    { id: "meta/muse-spark-1.2-contributor", name: "Muse Spark 1.2" },
+    { id: "anthropic/claude-fable-5.1", name: "Claude Fable 5.1 (limited offer)" },
   ],
   // Login-flow host — the CLI in freebuff mode logs in via freebuff.com, and
   // the server builds loginUrl from the host it was called on, so the link the
