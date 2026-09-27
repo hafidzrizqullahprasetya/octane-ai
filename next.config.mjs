@@ -1,6 +1,5 @@
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-
 const projectRoot = dirname(fileURLToPath(import.meta.url));
 // CLI bundling needs workspace root so tracing includes hoisted node_modules (slim ~50MB).
 // Docker / default uses projectRoot so server.js lands at /app/server.js (not nested).
@@ -19,6 +18,10 @@ const nextConfig = {
     "localhost:20128",
     "localhost:20129",
     "localhost:20127",
+    ...(process.env.ALLOWED_DEV_ORIGINS || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
   ],
   distDir: process.env.NEXT_DIST_DIR || ".next",
   output: "standalone",

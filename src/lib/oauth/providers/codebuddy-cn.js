@@ -1,4 +1,5 @@
 import { CODEBUDDY_CONFIG } from "../constants/oauth.js";
+import { fetchOAuthWithPool, oauthProxyPoolIdFrom } from "../oauthProxy.js";
 
 function extractUserInfo(accessToken) {
   try {
@@ -21,8 +22,8 @@ function extractUserInfo(accessToken) {
 const codebuddyCn = {
   config: CODEBUDDY_CONFIG,
   flowType: "device_code",
-  requestDeviceCode: async (config) => {
-    const response = await fetch(`${config.stateUrl}?platform=${config.platform}`, {
+  requestDeviceCode: async (config, _challenge, options = {}) => {
+    const response = await fetchOAuthWithPool(`${config.stateUrl}?platform=${config.platform}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -35,7 +36,7 @@ const codebuddyCn = {
         "X-Product": "SaaS",
       },
       body: "{}",
-    });
+    }, oauthProxyPoolIdFrom(options));
     if (!response.ok) throw new Error(`CodeBuddy state request failed: ${await response.text()}`);
     const data = await response.json();
     if (data.code !== 0 || !data.data?.state || !data.data?.authUrl) {
@@ -49,10 +50,10 @@ const codebuddyCn = {
       _isCodeBuddy: true,
     };
   },
-  pollToken: async (config, deviceCode) => {
+  pollToken: async (config, deviceCode, _verifier, _extra, options = {}) => {
     // CodeBuddy polls the token endpoint via GET with the state as a query
     // param (not POST/body) — matches the official CLI's /v2/plugin/auth/token?state=...
-    const response = await fetch(`${config.tokenUrl}?state=${encodeURIComponent(deviceCode)}`, {
+    const response = await fetchOAuthWithPool(`${config.tokenUrl}?state=${encodeURIComponent(deviceCode)}`, {
       method: "GET",
       headers: {
         Accept: "application/json",
@@ -65,7 +66,7 @@ const codebuddyCn = {
         "X-No-Department-Info": "true",
         "X-Product": "SaaS",
       },
-    });
+    }, oauthProxyPoolIdFrom(options));
     if (!response.ok) return { ok: false, data: { error: "request_failed" } };
     const data = await response.json();
     // code 11217 = pending (RetryFetchToken), code 0 = success

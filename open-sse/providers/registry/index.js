@@ -125,6 +125,11 @@ import p125 from "./youcom.js";
 import p126 from "./zed.js";
 import p68z from "./opencode-zen.js";
 import p127 from "./qoder-cn.js";
+import p128 from "./tokenharbor.js";
+import p129 from "./dahl.js";
+import p130 from "./atria.js";
+import p131 from "./agnes.js";
+import p132 from "./bai.js";
 
 const REGISTRY = [
   p0,
@@ -253,6 +258,11 @@ const REGISTRY = [
   p124,
   p125,
   p126,
+  p128,
+  p129,
+  p130,
+  p131,
+  p132,
 ];
 
 export default REGISTRY;
