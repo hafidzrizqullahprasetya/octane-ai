@@ -16,6 +16,8 @@ const {
   resetSessionCache,
   rootAgentIdForModel,
   injectFreebuffMarker,
+  fetchSessionOffers,
+  guardOfferClaim,
   FREEBUFF_SYSTEM_MARKER,
 } = __test__;
 

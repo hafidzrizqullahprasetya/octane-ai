@@ -1,6 +1,5 @@
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-
 const projectRoot = dirname(fileURLToPath(import.meta.url));
 // CLI bundling needs workspace root so tracing includes hoisted node_modules (slim ~50MB).
 // Docker / default uses projectRoot so server.js lands at /app/server.js (not nested).
@@ -19,15 +18,13 @@ const nextConfig = {
     "localhost:20128",
     "localhost:20129",
     "localhost:20127",
+    ...(process.env.ALLOWED_DEV_ORIGINS || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
   ],
   distDir: process.env.NEXT_DIST_DIR || ".next",
   output: "standalone",
-  // Dev via IP/hostname (e.g. VPS): ALLOWED_DEV_ORIGINS="76.13.17.78,example.com"
-  // silences Next's cross-origin dev warning without hardcoding hosts in repo.
-  allowedDevOrigins: (process.env.ALLOWED_DEV_ORIGINS || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean),
   // `open` must stay external. It derives its own directory from `import.meta.url`, and
   // webpack replaces that with the absolute path of the BUILD machine as a string literal.
   // A release built on macOS therefore ships `file:///Users/.../open/index.js`, which
