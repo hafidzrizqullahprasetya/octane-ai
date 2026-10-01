@@ -130,6 +130,16 @@ export const GROK_CLI_CONFIG = { ...PROVIDER_OAUTH["grok-cli"] };
 // Freebuff OAuth Configuration (Device Code Flow)
 export const FREEBUFF_CONFIG = { ...PROVIDER_OAUTH["freebuff"] };
 
+// Muse — subscription device code flow to auth.meta.com, no refresh
+// (Meta rejects refresh_token grants; the minted Model API key never expires).
+export const MUSE_CONFIG = { ...PROVIDER_OAUTH["muse"] };
+
+// Trae (ByteDance marscode) OAuth — authorization_code flow with local callback.
+//   1) POST GetLoginGuidance {loginTraceID} → {Result.LoginHost}
+//   2) Browser opens ${loginHost}/authorization?client_id=...&login_trace_id=...&auth_callback_url=${cb}
+//   3) Redirect → ${cb}?refreshToken=...&loginHost=...&isRedirect=true
+//   4) POST ExchangeToken {ClientID, RefreshToken, ClientSecret:"-"} → {Result.AccessToken, ExpiresAt}
+//   5) POST GetUserInfo (x-cloudide-token) → email/name
 // Xiaomi MiMo Desktop OAuth — custom ECDH encrypted-callback flow (NOT standard OAuth2).
 //   1) Client generates X25519 keypair
 //   2) Browser opens ${platformUrl}/authorize?pk=<pubkey>&redirect_uri=http://localhost:<port>/&kn=mimocode&key_name=...
@@ -205,6 +215,13 @@ export const WINDSURF_CONFIG = {
  oauthTimeoutMs: 600_000,
 };
 
+// GLM Coding (Z.ai) OAuth — ZCode CLI polling flow (NOT PKCE): init mints a
+// one-off poll token, the browser opens the server-generated authorize_url,
+// poll/ready returns the tokens. The Z.AI OAuth token is then exchanged for a
+// platform business JWT and finally a long-lived coding-plan API key (no
+// refresh grant).
+export const GLM_OAUTH_CONFIG = { ...PROVIDER_OAUTH["glm"] };
+
 // Zed hosted LLM aggregator — RSA keypair native-app auth (NOT OAuth).
 // Client generates ephemeral RSA-2048 keypair; user signs in at zed.dev/native_app_signin;
 // Zed redirects to local callback with access_token RSA-encrypted against our public key.
@@ -222,28 +239,29 @@ export const OAUTH_TIMEOUT = 300000;
 
 // Provider list
 export const PROVIDERS = {
- CLAUDE: "claude",
- CODEX: "codex",
- GEMINI: "gemini-cli",
- QODER: "qoder",
- QODER_CN: "qoder-cn",
- IFLOW: "iflow",
- ANTIGRAVITY: "antigravity",
- OPENAI: "openai",
- GITHUB: "github",
- KIRO: "kiro",
- CURSOR: "cursor",
- KIMI: "kimi",
- KIMI_CODING: "kimi",
- KILOCODE: "kilocode",
- CLINE: "cline",
- CLINEPASS: "clinepass",
- GITLAB: "gitlab",
- CODEBUDDY: "codebuddy-cn",
- CODEBUDDY_INTL: "codebuddy-intl",
- KIMCHI: "kimchi",
- GROK_CLI: "grok-cli",
- TRAE: "trae",
- WINDSURF: "windsurf",
- ZED: "zed",
+  CLAUDE: "claude",
+  CODEX: "codex",
+  GEMINI: "gemini-cli",
+  QODER: "qoder",
+  QODER_CN: "qoder-cn",
+  IFLOW: "iflow",
+  ANTIGRAVITY: "antigravity",
+  OPENAI: "openai",
+  GITHUB: "github",
+  KIRO: "kiro",
+  CURSOR: "cursor",
+  KIMI: "kimi",
+  KIMI_CODING: "kimi",
+  KILOCODE: "kilocode",
+  CLINE: "cline",
+  CLINEPASS: "clinepass",
+  GITLAB: "gitlab",
+  CODEBUDDY: "codebuddy-cn",
+  CODEBUDDY_INTL: "codebuddy-intl",
+  KIMCHI: "kimchi",
+  GROK_CLI: "grok-cli",
+  TRAE: "trae",
+  WINDSURF: "windsurf",
+  GLM: "glm",
+  ZED: "zed",
 };

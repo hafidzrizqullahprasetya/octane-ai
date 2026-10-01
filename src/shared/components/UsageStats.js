@@ -241,6 +241,7 @@ export default function UsageStats({ period: periodProp, setPeriod: setPeriodPro
           freeProviders: FREE_PROVIDERS,
           nodeNameMap,
           isLLMProvider,
+          aiProviders: AI_PROVIDERS,
         }));
       })
       .catch(() => {});

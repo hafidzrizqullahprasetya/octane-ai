@@ -12,12 +12,14 @@ export function buildUsageProviderList({
   freeProviders = {},
   nodeNameMap = {},
   isLLMProvider = () => true,
+  aiProviders = {},
 } = {}) {
   const seen = new Set();
   const unique = connections
     .filter((c) => {
       if (c.isActive === false) return false;
       if (!isLLMProvider(c.provider)) return false;
+      if (aiProviders[c.provider]?.hidden) return false;
       if (seen.has(c.provider)) return false;
       seen.add(c.provider);
       return true;
