@@ -20,12 +20,14 @@ export function getQuotaCooldown(backoffLevel = 0) {
  * @param {number} backoffLevel - Current backoff level for exponential backoff
  * @returns {{ shouldFallback: boolean, cooldownMs: number, newBackoffLevel?: number, noLock?: boolean }}
  */
-export function checkFallbackError(status, errorText, backoffLevel = 0) {
+export function checkFallbackError(status, errorText, backoffLevel = 0, provider = null) {
   const lowerError = errorText
     ? (typeof errorText === "string" ? errorText : JSON.stringify(errorText)).toLowerCase()
     : "";
 
   for (const rule of ERROR_RULES) {
+    if (rule.provider && rule.provider !== provider) continue;
+
     // No-fallback rule: deterministic client/request error. Don't lock the
     // account (cooldownMs 0) and don't try the next account — it would fail
     // identically and only burn every account.
