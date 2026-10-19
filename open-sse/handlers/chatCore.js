@@ -27,7 +27,6 @@ import { injectPonytail } from "../rtk/ponytail.js";
 import { injectModelPersona } from "../rtk/persona.js";
 import { resolveModelPersona } from "../config/personaPrompts.js";
 import { compressMessages, formatRtkLog } from "../rtk/index.js";
-import { enforceRequestSizeLimit, formatSizeGuardLog } from "../rtk/sizeGuard.js";
 import { compressWithHeadroom, formatHeadroomLog, formatHeadroomSizeLog, isHeadroomPhantomSavings } from "../rtk/headroom.js";
 import { compressWithPxpipe } from "../rtk/pxpipe.js";
 import { getCapabilitiesForModel } from "../providers/capabilities.js";
@@ -69,7 +68,7 @@ export function stripContinuityFields(body) {
  return body;
 }
 
-export async function handleChatCore({ body, modelInfo, credentials, log, onCredentialsRefreshed, onRequestSuccess, onDisconnect, clientRawRequest, connectionId, userAgent, apiKey, ccFilterNaming, rtkEnabled, headroomEnabled, headroomUrl, headroomCompressUserMessages, headroomTimeoutMs, cavemanEnabled, cavemanLevel, ponytailEnabled, ponytailLevel, modelPersonaEnabled, pxpipeEnabled, pxpipeMinChars, pxpipeTimeoutMs, pxpipeTransform, onPxpipeEvent, sourceFormatOverride, providerThinking, providerOverrides, resolveProxyConfig }) {
+export async function handleChatCore({ body, modelInfo, credentials, log, onCredentialsRefreshed, onRequestSuccess, onDisconnect, clientRawRequest, connectionId, userAgent, apiKey, ccFilterNaming, rtkEnabled, headroomEnabled, headroomUrl, headroomCompressUserMessages, headroomTimeoutMs, cavemanEnabled, cavemanLevel, ponytailEnabled, ponytailLevel, modelPersonaEnabled, pxpipeEnabled, pxpipeMinChars, pxpipeTimeoutMs, pxpipeTransform, onPxpipeEvent, sourceFormatOverride, providerThinking, resolveProxyConfig, providerOverrides }) {
  const { provider, model } = modelInfo;
  const requestStartTime = Date.now();
  // Stable per-session color so all lines of one CLI conversation share a tag
@@ -101,7 +100,16 @@ export async function handleChatCore({ body, modelInfo, credentials, log, onCred
  // sourceFormat-matched transport if that format is declared (opencode-go models
  // differ — kimi/glm only do /chat/completions). Undeclared models keep the
  // upstream default (use the transport), preserving behavior for glm/deepseek/...
- const useTransport = (!modelSupportedFormats || modelSupportedFormats.includes(sourceFormat)) ? runtimeTransport : null;
+ // When the client's wire format is NOT among the model's supportedFormats, fall
+ // back to the transport for the model's declared targetFormat so the URL always
+ // matches the translated body. Without this, a Responses-only model (e.g. Muse
+ // Spark: supportedFormats ["openai-responses"]) requested by an OpenAI client is
+ // translated to the Responses body (`input`) yet POSTed to the default Chat
+ // Completions URL, and upstream rejects it: "unknown parameter `input`".
+ const modelTargetTransport = modelTargetFormat ? resolveTransport(provider, modelTargetFormat) : null;
+ const useTransport = (!modelSupportedFormats || modelSupportedFormats.includes(sourceFormat))
+  ? runtimeTransport
+  : modelTargetTransport;
  // A source-format-matched endpoint keeps the request lossless. Prefer it
  // over a model-level targetFormat, which is only the fallback for clients
  // whose wire format has no supported transport (for example MiniMax-M3:
@@ -333,15 +341,6 @@ export async function handleChatCore({ body, modelInfo, credentials, log, onCred
 
  if (xf.length && log?.line) log.line(reqTag, "⚙", xf.join(" · "));
 
- // Size guard: last line of defense against host request-size limits (e.g.
- // hosts rejecting >8 MiB with "Invalid or oversized hosted request").
- // Runs after every saver so it only trims genuinely oversized payloads —
- // the trimmed request still answers, while an oversize 400 would burn
- // through every account in the pool. Prod-safe by design.
- const sizeGuardStats = enforceRequestSizeLimit(provider, translatedBody, log);
- const sizeGuardLine = formatSizeGuardLog(sizeGuardStats);
- if (sizeGuardLine) log?.info?.("SIZEGUARD", sizeGuardLine);
-
  // Pin cache breakpoints to the final body — every saver above can reshape
  // system/tools/messages, and a stale anchor costs a full prefix rewrite.
  if (passthrough && clientTool === "claude") anchorClaudeCache(translatedBody);
@@ -511,14 +510,15 @@ export async function handleChatCore({ body, modelInfo, credentials, log, onCred
   }
   const errMsg = formatProviderError(error, provider, model, HTTP_STATUS.BAD_GATEWAY);
   if (log?.errorLine) {
-   log.errorLine(reqTag, "✗", `ERROR 502 · ${provider}/${model} · ${Date.now() - requestStartTime}ms\n    ${errMsg}`);
+   log.errorLine(reqTag, "✗", `ERROR ${error?.status || HTTP_STATUS.BAD_GATEWAY} · ${provider}/${model} · ${Date.now() - requestStartTime}ms\n    ${errMsg}`);
   }
-  return createErrorResult(HTTP_STATUS.BAD_GATEWAY, errMsg, error?.resetsAtMs || undefined);
+  // Carry the executor's own status (429/409 quota gates) when it threw one;
+  // fall back to 502 for generic throws.
+  return createErrorResult(error?.status || HTTP_STATUS.BAD_GATEWAY, errMsg, error?.resetsAtMs || undefined);
  }
 
- // Handle 401/403 - try token refresh (skip for noAuth or providers without refresh mechanism)
- const hasRefreshCapability = !executor.noAuth && (typeof executor.refreshCredentials === "function" || credentials?.refreshToken);
- if (hasRefreshCapability && (providerResponse.status === HTTP_STATUS.UNAUTHORIZED || providerResponse.status === HTTP_STATUS.FORBIDDEN)) {
+ // Handle 401/403 - try token refresh (skip for noAuth providers)
+ if (!executor.noAuth && (providerResponse.status === HTTP_STATUS.UNAUTHORIZED || providerResponse.status === HTTP_STATUS.FORBIDDEN)) {
   try {
    // Mutate credentials after each successful refresh: rotating refresh_token
    // providers (xAI/grok-cli) issue a new RT on every refresh; without this,
@@ -584,11 +584,7 @@ export async function handleChatCore({ body, modelInfo, credentials, log, onCred
   const errMsg = formatProviderError(new Error(message), provider, model, statusCode);
   if (log?.errorLine) {
    const urlStr = providerUrl ? `\n    URL: ${providerUrl}` : "";
-   // Outbound size on the error line: distinguishes a real size-limit 400
-   // from a schema/content 400 ("oversized" hosts lie about the reason).
-   let sizeStr = "";
-   try { sizeStr = `\n    OUTBOUND: ${(Buffer.byteLength(JSON.stringify(finalBody || translatedBody || {}), "utf8") / 1024 / 1024).toFixed(2)}MiB`; } catch { /* never mask the error */ }
-   log.errorLine(reqTag, "✗", `ERROR ${statusCode} · ${provider}/${model} · ${Date.now() - requestStartTime}ms${urlStr}${sizeStr}\n    ${errMsg}`);
+   log.errorLine(reqTag, "✗", `ERROR ${statusCode} · ${provider}/${model} · ${Date.now() - requestStartTime}ms${urlStr}\n    ${errMsg}`);
   }
   reqLogger.logError(new Error(message), finalBody || translatedBody);
   return createErrorResult(statusCode, errMsg, resetsAtMs, upstreamResponseHeaders(providerResponse.headers));
@@ -598,8 +594,11 @@ export async function handleChatCore({ body, modelInfo, credentials, log, onCred
  const appendLog = (extra) => appendRequestLog({ model, provider, connectionId, ...extra }).catch(() => { });
  const trackDone = () => trackPendingRequest(model, provider, connectionId, false);
 
- // Provider forced streaming but client wants JSON
- if (!clientRequestedStreaming && providerRequiresStreaming) {
+ // Provider forced streaming but client wants JSON. The Responses wire always
+ // streams upstream (openaiToOpenAIResponsesRequest pins stream:true), so a
+ // non-stream OpenAI/native client behind a Responses upstream must also take
+ // this path — handleForcedSSEToJson returns null when the body is not SSE.
+ if (!clientRequestedStreaming && (providerRequiresStreaming || providerResponseFormat === FORMATS.OPENAI_RESPONSES)) {
   const result = await handleForcedSSEToJson({ ...sharedCtx, providerResponse, sourceFormat, targetFormat: providerResponseFormat, customToolNames, toolNameMap, trackDone, appendLog });
   if (result) { streamController.handleComplete(); return result; }
  }

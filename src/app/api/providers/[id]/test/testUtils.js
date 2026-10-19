@@ -1,8 +1,16 @@
 import { getProviderConnectionById, updateProviderConnection } from "@/lib/localDb";
 import { resolveConnectionProxyConfig } from "@/lib/network/connectionProxy";
 import { testProxyUrl } from "@/lib/network/proxyTest";
-import { isOpenAICompatibleProvider, isAnthropicCompatibleProvider } from "@/shared/constants/providers";
+import { isOpenAICompatibleProvider, isAnthropicCompatibleProvider, AI_PROVIDERS } from "@/shared/constants/providers";
 import { getDefaultModel } from "open-sse/config/providerModels.js";
+import { probeBedrockCredentials } from "open-sse/executors/bedrock.js";
+import {
+ NOUS_CHAT_COMPLETIONS_URL,
+ NOUS_VALIDATION_MODEL,
+ createNousApiKeyProbe,
+ getNousApiKeyValidationError,
+ isNousApiKeyAccepted,
+} from "open-sse/services/nous.js";
 import { resolveOllamaLocalHost, PROVIDERS } from "open-sse/config/providers.js";
 import { CODEX_CLI_VERSION } from "open-sse/config/appConstants.js";
 import { GROK_CLI_PAGER_USER_AGENT, GROK_CLI_VERSION } from "open-sse/config/grokCli.js";
@@ -102,9 +110,26 @@ const OAUTH_TEST_CONFIG = {
   authPrefix: "Bearer ",
  },
  "codebuddy-cn": { tokenExists: true },
- // codebuddy-intl uses the same JWT token structure as codebuddy-cn
- // (access + refresh token pair, ~1-year expiry) — same test strategy (#4232).
- "codebuddy-intl": { tokenExists: true },
+ // GUARD — DO NOT REMOVE. See AGENTS.md §4. Without this entry, Test Connection
+ // returns "Provider test not supported". codebuddy-intl access tokens are
+ // Keycloak JWTs (iss .../auth/realms/copilot); probe the realm's userinfo
+ // endpoint so a revoked/expired token is caught. Derive the realm URL from the
+ // token's `iss` claim, falling back to the known copilot realm.
+ // 200 = valid, 401 = invalid/revoked.
+ // Covered by tests/unit/codebuddy-intl-connection.test.js.
+ "codebuddy-intl": {
+  buildUrl: (token) => {
+   const iss = decodeJwtPayload(token)?.iss;
+   const base = typeof iss === "string" && iss.startsWith("https://")
+    ? iss.replace(/\/$/, "")
+    : "https://www.codebuddy.ai/auth/realms/copilot";
+   return `${base}/protocol/openid-connect/userinfo`;
+  },
+  method: "GET",
+  authHeader: "Authorization",
+  authPrefix: "Bearer ",
+  refreshable: true,
+ },
  kimchi: {
   url: KIMCHI_CONFIG.validationUrl || "https://api.cast.ai/v1/llm/openai/supported-providers",
   method: "GET",
@@ -163,6 +188,17 @@ const OAUTH_TEST_CONFIG = {
   authPrefix: "Bearer ",
   extraHeaders: { "x-api-version": "1.0.0" },
   refreshable: false,
+ },
+ nous: {
+  url: NOUS_CHAT_COMPLETIONS_URL,
+  method: "POST",
+  authHeader: "Authorization",
+  authPrefix: "Bearer ",
+  extraHeaders: { "Content-Type": "application/json" },
+  body: JSON.stringify(createNousApiKeyProbe()),
+  useApiKey: true,
+  isAcceptedResponse: isNousApiKeyAccepted,
+  getErrorMessage: getNousApiKeyValidationError,
  },
 };
 
@@ -277,7 +313,7 @@ async function refreshOAuthToken(connection) {
    return { accessToken: data.access_token, expiresIn: data.expires_in, refreshToken: data.refresh_token || refreshToken };
   }
 
-  if (provider === "codex" || provider === "grok-cli" || provider === "xai" || provider === "codebuddy-intl") {
+  if (provider === "codex" || provider === "grok-cli" || provider === "xai" || provider === "codebuddy-intl" || provider === "nous") {
    return await refreshProviderCredentials(provider, connection, console);
   }
 
@@ -366,7 +402,7 @@ async function testOAuthConnection(connection, effectiveProxy = null) {
   return { valid: true, error: null, refreshed: false, newTokens: null };
  }
 
- let accessToken = connection.accessToken;
+ let accessToken = config.useApiKey ? (connection.apiKey || connection.accessToken) : connection.accessToken;
  let refreshed = false;
  let newTokens = null;
 
@@ -374,7 +410,7 @@ async function testOAuthConnection(connection, effectiveProxy = null) {
  if (config.refreshable && tokenExpired && connection.refreshToken) {
   const tokens = await refreshOAuthToken(connection);
   if (tokens) {
-   accessToken = tokens.accessToken;
+   accessToken = config.useApiKey ? (tokens.apiKey || tokens.accessToken) : tokens.accessToken;
    refreshed = true;
    newTokens = tokens;
   } else {
@@ -455,10 +491,11 @@ async function testOAuthConnection(connection, effectiveProxy = null) {
   if (res.status === 401 && config.refreshable && !refreshed && connection.refreshToken) {
    const tokens = await refreshOAuthToken(connection);
    if (tokens) {
-    const retryUrl = config.buildUrl ? config.buildUrl(tokens.accessToken) : testUrl;
+    const retryToken = config.useApiKey ? (tokens.apiKey || tokens.accessToken) : tokens.accessToken;
+    const retryUrl = config.buildUrl ? config.buildUrl(retryToken) : testUrl;
     const retryHeaders = config.noAuth
      ? { ...config.extraHeaders }
-     : { [config.authHeader]: `${config.authPrefix}${tokens.accessToken}`, ...config.extraHeaders };
+     : { [config.authHeader]: `${config.authPrefix}${retryToken}`, ...config.extraHeaders };
     const retryOpts = { method: config.method, headers: retryHeaders };
     if (config.body) retryOpts.body = config.body;
     const retryRes = await fetchWithConnectionProxy(retryUrl, retryOpts, effectiveProxy);
@@ -554,6 +591,19 @@ async function testApiKeyConnection(connection, effectiveProxy = null) {
   }
  }
 
+ // AWS-signed providers (Bedrock): without this every Test ends in the switch's default,
+ // "Provider test not supported", and marks a working connection as errored.
+ if (AI_PROVIDERS[connection.provider]?.credentialForm === "aws") {
+  try {
+   return await probeBedrockCredentials(
+    connection,
+    (url, options) => fetchWithConnectionProxy(url, options, effectiveProxy),
+   );
+  } catch (err) {
+   return { valid: false, error: err.message };
+  }
+ }
+
  try {
   switch (connection.provider) {
    case "cloudflare-ai": {
@@ -608,6 +658,20 @@ async function testApiKeyConnection(connection, effectiveProxy = null) {
    case "openrouter": {
     const res = await fetchWithConnectionProxy("https://openrouter.ai/api/v1/auth/key", { headers: { Authorization: `Bearer ${connection.apiKey}` } }, effectiveProxy);
     return { valid: res.ok, error: res.ok ? null : "Invalid API key" };
+   }
+   case "nous": {
+    // /models is public on Nous; a minimal chat request is required to
+    // distinguish an accepted Portal key from an arbitrary Bearer value.
+    const probe = createNousApiKeyProbe(connection.apiKey);
+    const res = await fetchWithConnectionProxy(probe.url, {
+     ...probe.options,
+     signal: AbortSignal.timeout(8000),
+    }, effectiveProxy);
+    const valid = isNousApiKeyAccepted(res.status);
+    return {
+     valid,
+     error: valid ? null : getNousApiKeyValidationError(res.status),
+    };
    }
    case "glm": {
     const res = await fetchWithConnectionProxy("https://api.z.ai/api/anthropic/v1/messages", {

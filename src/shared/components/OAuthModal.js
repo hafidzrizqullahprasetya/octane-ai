@@ -24,6 +24,9 @@ const DEVICE_CODE_PROVIDERS = [
  "freebuff",
  "muse",
  "glm",
+ "minimax-code",
+ "minimax-code-global",
+ "nous",
 ];
 
 const oauthProxyPoolStorageKey = (providerId) => `9router.oauthProxyPool.${providerId}`;
@@ -441,9 +444,13 @@ export default function OAuthModal({ isOpen, provider, providerInfo, onSuccess, 
        ? { _kimiDeviceId: data._kimiDeviceId }
        : provider === "glm"
         ? { _zcodePollToken: data._zcodePollToken }
-        : null;
+        : (provider === "minimax-code" || provider === "minimax-code-global")
+         ? { _minimaxPollByUser: data._minimaxPollByUser }
+         : null;
     startPolling(
-     data.device_code,
+     // MiniMax's device-code variant returns no device_code: the token
+     // endpoint is polled with the user_code itself.
+     data.device_code || data.user_code,
      data.codeVerifier,
      data.interval || 5,
      extraData,
