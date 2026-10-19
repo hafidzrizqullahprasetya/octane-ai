@@ -28,10 +28,12 @@ describe("OpenAI → Cursor", () => {
   // KNOWN BUG
   it.fails("image content is preserved", () => {
     const out = O2C({
-      messages: [{ role: "user", content: [
-        { type: "text", text: "look" },
-        { type: "image_url", image_url: { url: "data:image/png;base64,AAAA" } },
-      ] }],
+      messages: [{
+        role: "user", content: [
+          { type: "text", text: "look" },
+          { type: "image_url", image_url: { url: "data:image/png;base64,AAAA" } },
+        ]
+      }],
     });
     expect(JSON.stringify(out), "image dropped").toContain("AAAA");
   });
@@ -51,9 +53,11 @@ describe("OpenAI → CommandCode", () => {
     const out = O2CC({
       messages: [
         { role: "user", content: "go" },
-        { role: "assistant", content: "", tool_calls: [
-          { id: "c1", type: "function", function: { name: "f", arguments: "{bad" } },
-        ] },
+        {
+          role: "assistant", content: "", tool_calls: [
+            { id: "c1", type: "function", function: { name: "f", arguments: "{bad" } },
+          ]
+        },
         { role: "tool", tool_call_id: "c1", content: "r" },
       ],
     });
@@ -64,16 +68,18 @@ describe("OpenAI → CommandCode", () => {
 
   it("image content is preserved as native CommandCode image blocks", () => {
     const out = O2CC({
-      messages: [{ role: "user", content: [
-        { type: "text", text: "look" },
-        { type: "image_url", image_url: { url: "data:image/png;base64,BBBB" } },
-      ] }],
+      messages: [{
+        role: "user", content: [
+          { type: "text", text: "look" },
+          { type: "image_url", image_url: { url: "data:image/png;base64,BBBB" } },
+        ]
+      }],
     });
     expect(JSON.stringify(out)).toContain("BBBB");
     expect(JSON.stringify(out)).not.toContain("[image omitted]");
     expect(out.params.messages[0].content).toEqual([
       { type: "text", text: "look" },
-      { type: "image", image: "data:image/png;base64,BBBB", mimeType: "image/png" },
+      { type: "image", image: "data:image/png;base64,BBBB", mimeType: "image/png", mediaType: "image/png" },
     ]);
   });
 });

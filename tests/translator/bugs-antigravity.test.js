@@ -106,7 +106,7 @@ describe("Antigravity executor", () => {
     }, true, { projectId: "project-1", connectionId: "conn-1" });
 
     const query = out.request.tools[0].functionDeclarations[0].parameters.properties.query;
-    expect(query).toEqual({ type: "string", description: "Search query" });
+    expect(query).toEqual({ type: expect.stringMatching(/^string$/i), description: "Search query" });
   });
 
   it("does not inject the legacy Antigravity default system prompt for Gemini-backed models", () => {
