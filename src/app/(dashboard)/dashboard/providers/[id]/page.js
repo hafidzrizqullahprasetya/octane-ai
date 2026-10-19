@@ -551,13 +551,13 @@ export default function ProviderDetailPage() {
   useEffect(() => {
     const isLiveCatalog = providerId === "cursor" || providerId === "zed";
     if (!isLiveCatalog) {
-      setLiveModels([]);
+      queueMicrotask(() => setLiveModels([]));
       return;
     }
 
     const connection = connections.find((item) => item.isActive !== false);
     if (!connection?.id) {
-      setLiveModels([]);
+      queueMicrotask(() => setLiveModels([]));
       if (providerId === "zed") setLiveModelsError(null);
       return;
     }

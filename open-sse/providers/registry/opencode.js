@@ -33,6 +33,9 @@ export default {
   },
   models: [
     // Endpoint formats differ per model, so declare non-chat models explicitly.
+    // Free tier synced 2026-10-13 to live GET https://opencode.ai/zen/v1/models
+    // (11 free ids; the dashboard merges that feed live via modelsFetcher, this
+    // static list is the fallback catalog).
     { id: "muse-spark-1.2-contributor-free", name: "Muse Spark 1.2 Contributor Free", targetFormat: "openai-responses" },
     { id: "muse-spark-1.3(xhigh)", name: "Muse Spark 1.3 (XHigh)", targetFormat: "openai-responses" },
     { id: "muse-spark-1.3(high)", name: "Muse Spark 1.3 (High)", targetFormat: "openai-responses" },
@@ -41,10 +44,20 @@ export default {
     { id: "muse-spark-1.3(minimal)", name: "Muse Spark 1.3 (Minimal)", targetFormat: "openai-responses" },
     { id: "muse-spark-1.3", name: "Muse Spark 1.3 (Default)", targetFormat: "openai-responses" },
     { id: "muse-spark-1.3-contributor-free", name: "Muse Spark 1.3 Contributor Free", targetFormat: "openai-responses" },
+    // union-alpha is retired upstream (absent from the live feed) but kept:
+    // executor MESSAGES_MODELS + opencode-muse-spark-thinking tests pin it.
     { id: "union-alpha", name: "Union Alpha Free", targetFormat: "claude" },
     { id: "mimo-v2.5-free", name: "MiMo V2.5 Free" },
     { id: "laguna-s-2.1-free", name: "Laguna S 2.1 Free" },
     { id: "jev-1.13-free", name: "Jev 1.13 Free", kind: "systemone" },
+    { id: "big-pickle", name: "Big Pickle Free" },
+    { id: "ling-3.1-flash-free", name: "Ling 3.1 Flash Free" },
+    { id: "cat-jam-free", name: "Cat Jam Free" },
+    { id: "mimo-v2.6-flash-free", name: "MiMo V2.6 Flash Free" },
+    { id: "nemotron-3.5-lightning-free", name: "Nemotron 3.5 Lightning Free" },
+    { id: "step-5-preview-free", name: "Step 5 Preview Free" },
+    { id: "longcat-2.5-preview-free", name: "LongCat 2.5 Preview Free" },
+    { id: "space-bunny-free", name: "Space Bunny Free" },
   ],
   serviceKinds: ["llm", "systemone"],
   systemoneConfig: {

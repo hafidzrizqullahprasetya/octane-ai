@@ -4,16 +4,17 @@
  *
  * GUARD — DO NOT DELETE.
  *
- * Why this exists:
+ * Why this exists (root cause, 2026-09-19):
  *   The Docker image pins `node:22-alpine` by digest, which ships npm 10.9.8.
- *   The repo's `package-lock.json` is tracked and the Dockerfile runs `npm ci`.
- *   If the lockfile is regenerated with npm 11+, npm 11 DROPS the top-level
- *   optional entries `@emnapi/core` and `@emnapi/runtime` that npm 10 requires
- *   for its platform-complete resolve.
+ *   The repo's `package-lock.json` is tracked (upstream does NOT track it) and
+ *   the Dockerfile runs `npm ci`. If the lockfile is regenerated with npm 11+,
+ *   npm 11 DROPS the top-level optional entries `@emnapi/core` and
+ *   `@emnapi/runtime` that npm 10 requires for its platform-complete resolve.
  *   The tag-triggered "Build and Push Docker Image" workflow then fails at
  *   `npm ci` with:
  *       Missing: @emnapi/runtime@<v> from lock file
  *       Missing: @emnapi/core@<v> from lock file
+ *   This already happened once on tag v1.0.14.
  *
  * Rule: ALWAYS regenerate package-lock.json with npm 10.x (the version Docker
  * uses), never with the developer's global npm 11+.

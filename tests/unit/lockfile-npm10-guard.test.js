@@ -1,9 +1,10 @@
-// Guard: ensure package-lock.json is npm-10-compatible
+// GUARD — DO NOT DELETE. See AGENTS.md §1.
 //
 // The Docker image (node:22-alpine, pinned by digest) ships npm 10.9.8 and runs
 // `npm ci` against the committed package-lock.json. Regenerating the lockfile
 // with npm 11+ drops the top-level @emnapi/core + @emnapi/runtime entries npm 10
-// requires, breaking the tag-triggered Docker build at `npm ci`.
+// requires, breaking the tag-triggered Docker build at `npm ci` (already
+// happened on tag v1.0.14).
 //
 // Regenerate the lockfile with npm 10 only:
 //   npx -y npm@10.9.8 install --package-lock-only

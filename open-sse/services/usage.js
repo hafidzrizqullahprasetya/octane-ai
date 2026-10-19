@@ -15,6 +15,7 @@ import { getCodeBuddyCnUsage, getCodeBuddyIntlUsage } from "./usage/codebuddy-cn
 import { getGrokCliUsage } from "./usage/grok-cli.js";
 import { getKimiUsage } from "./usage/kimi.js";
 import { getDeepseekUsage } from "./usage/deepseek.js";
+import { getFreebuffUsage } from "./usage/freebuff.js";
 import { getOpenCodeGoUsage } from "./usage/opencode-go.js";
 import { getFreebuffUsage } from "./usage/freebuff.js";
 import { getOpenCodeZenUsage } from "./usage/opencode-zen.js";

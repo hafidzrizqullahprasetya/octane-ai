@@ -445,17 +445,24 @@ export const PATTERN_CAPABILITIES = [
  { pattern: "*gpt-3.5*", caps: { contextWindow: 16385, maxOutput: 4096 } },
  { pattern: "*gpt-oss*", caps: { reasoning: true, thinkingFormat: "openai", contextWindow: 128000 } },
 
- // ── Cline free tier: stealth canary/alpha + Upstage Solar Pro + LongCat
- // (agentic coding models; windows unverified — conservative limits:
- // pixel-canary 200K/32K same as laguna:free, space-bunny 1M/32K per vendor
- // "1M context" description).
- // Upstage Solar Mini 4 (freebuff picker since 2026-09-23, same Upstage lane
- // as Pro 4) shares the conservative window until metered otherwise.
- // NOTE: placed before the o-series catch-alls — "solar-pro4" contains "o4".
- { pattern: "*pixel-canary*", caps: { reasoning: true, thinkingFormat: "openai", contextWindow: 200000, maxOutput: 32000 } },
- { pattern: "*space-bunny*", caps: { reasoning: true, thinkingFormat: "openai", contextWindow: 1000000, maxOutput: 32000 } },
- { pattern: "*solar-mini*", caps: { reasoning: true, thinkingFormat: "openai", contextWindow: 200000, maxOutput: 32000 } },
- { pattern: "*solar-pro*", caps: { reasoning: true, thinkingFormat: "openai", contextWindow: 200000, maxOutput: 32000 } },
+  // ── Cline free tier: stealth canary/alpha + Upstage Solar Pro + LongCat
+  // (agentic coding models; windows unverified — conservative limits:
+  // pixel-canary 200K/32K same as laguna:free, space-bunny 1M/32K per vendor
+  // "1M context" description).
+  // Upstage Solar Mini 4 (freebuff picker since 2026-09-23, same Upstage lane
+  // as Pro 4) shares the conservative window until metered otherwise.
+  // NOTE: placed before the o-series catch-alls — "solar-pro4" contains "o4".
+  { pattern: "*pixel-canary*",  caps: { reasoning: true, thinkingFormat: "openai", contextWindow: 200000, maxOutput: 32000 } },
+  { pattern: "*space-bunny*",   caps: { reasoning: true, thinkingFormat: "openai", contextWindow: 1000000, maxOutput: 32000 } },
+  { pattern: "*solar-mini*",    caps: { reasoning: true, thinkingFormat: "openai", contextWindow: 200000, maxOutput: 32000 } },
+  { pattern: "*solar-pro*",     caps: { reasoning: true, thinkingFormat: "openai", contextWindow: 200000, maxOutput: 32000 } },
+  { pattern: "*longcat*",       caps: { reasoning: true, thinkingFormat: "openai", contextWindow: 200000, maxOutput: 32000 } },
+
+  // ── OpenAI o-series (reasoning, vision) ──────────────────────────
+  { pattern: "*o1-mini*",       caps: { reasoning: true, thinkingFormat: "openai", contextWindow: 128000 } },
+  { pattern: "*o1*",            caps: { vision: true, reasoning: true, thinkingFormat: "openai", contextWindow: 200000, maxOutput: 100000 } },
+  { pattern: "*o3*",            caps: { vision: true, reasoning: true, thinkingFormat: "openai", contextWindow: 200000, maxOutput: 100000 } },
+  { pattern: "*o4*",            caps: { vision: true, reasoning: true, thinkingFormat: "openai", contextWindow: 200000, maxOutput: 100000 } },
 
  // ── OpenAI o-series (reasoning, vision) ──────────────────────────
  { pattern: "*o1-mini*", caps: { reasoning: true, thinkingFormat: "openai", contextWindow: 128000 } },

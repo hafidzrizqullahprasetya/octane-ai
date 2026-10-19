@@ -208,8 +208,6 @@ export default [
   p64,
   p65,
   p66,
-  p123,
-  p124,
   p67,
   p68,
   p68z,
@@ -220,6 +218,7 @@ export default [
   p73,
   p74,
   p75,
+
   p77,
   p78,
   p79,
