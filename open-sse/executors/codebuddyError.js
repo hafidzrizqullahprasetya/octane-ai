@@ -28,28 +28,28 @@ export const CODEBUDDY_EXHAUSTED_COOLDOWN_MS = 30 * 60 * 1000;
  * @returns {number|null} UTC epoch ms, or null when not found/unparsable.
  */
 export function parseCodebuddyResetMs(text) {
-  const m = String(text || "").match(
-    /reset at (\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})\s*UTC\s*([+-])\s*(\d{1,2})(?::?(\d{2}))?/i
-  );
-  if (!m) return null;
-  const [, Y, Mo, D, h, mi, s, sign, oh, om] = m;
-  const offMin = (parseInt(oh, 10) * 60 + parseInt(om || "0", 10)) * (sign === "-" ? -1 : 1);
-  const utcMs = Date.UTC(+Y, +Mo - 1, +D, +h, +mi, +s) - offMin * 60 * 1000;
-  return Number.isFinite(utcMs) ? utcMs : null;
+ const m = String(text || "").match(
+  /reset at (\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})\s*UTC\s*([+-])\s*(\d{1,2})(?::?(\d{2}))?/i
+ );
+ if (!m) return null;
+ const [, Y, Mo, D, h, mi, s, sign, oh, om] = m;
+ const offMin = (parseInt(oh, 10) * 60 + parseInt(om || "0", 10)) * (sign === "-" ? -1 : 1);
+ const utcMs = Date.UTC(+Y, +Mo - 1, +D, +h, +mi, +s) - offMin * 60 * 1000;
+ return Number.isFinite(utcMs) ? utcMs : null;
 }
 
 function tryParseJson(bodyText) {
+ try {
+  return JSON.parse(bodyText);
+ } catch { /* noop */ }
+ // Defensive: body may carry a "[429]: " prefix; recover the JSON tail.
+ const idx = String(bodyText || "").indexOf("{");
+ if (idx > 0) {
   try {
-    return JSON.parse(bodyText);
+   return JSON.parse(String(bodyText).slice(idx));
   } catch { /* noop */ }
-  // Defensive: body may carry a "[429]: " prefix; recover the JSON tail.
-  const idx = String(bodyText || "").indexOf("{");
-  if (idx > 0) {
-    try {
-      return JSON.parse(String(bodyText).slice(idx));
-    } catch { /* noop */ }
-  }
-  return null;
+ }
+ return null;
 }
 
 /**
@@ -58,35 +58,52 @@ function tryParseJson(bodyText) {
  * @returns {{ status: number, message: string, resetsAtMs?: number }|null}
  */
 export function parseCodebuddyError(response, bodyText) {
-  if (!response || response.status !== 429 || !bodyText) return null;
-  const json = tryParseJson(bodyText);
-  if (!json || typeof json !== "object") return null;
+ if (!response || !bodyText) return null;
+ const json = tryParseJson(bodyText);
+ if (!json || typeof json !== "object") return null;
 
-  const err = json.error && typeof json.error === "object" ? json.error : null;
-  const data = err?.data && typeof err.data === "object" ? err.data : null;
-  const code = json.code ?? data?.code ?? err?.code ?? null;
-  const rawMsg = json.msg ?? data?.msg ?? err?.message ?? err?.msg ?? json.message ?? "";
-  const msg = typeof rawMsg === "string" ? rawMsg : JSON.stringify(rawMsg);
-  const numCode = Number(code);
+ const err = json.error && typeof json.error === "object" ? json.error : null;
+ const data = err?.data && typeof err.data === "object" ? err.data : null;
+ const code = json.code ?? data?.code ?? err?.code ?? null;
+ const rawMsg = json.msg ?? data?.msg ?? err?.message ?? err?.msg ?? json.message ?? "";
+ const msg = typeof rawMsg === "string" ? rawMsg : JSON.stringify(rawMsg);
+ const numCode = Number(code);
 
-  // Per-model frequency limit — honor the upstream reset time so the account
-  // locks until it can actually serve again (capped to 30m downstream).
-  if (numCode === 6004) {
-    const resetMs = parseCodebuddyResetMs(msg);
-    if (resetMs && resetMs > Date.now()) {
-      return { status: 429, message: msg || bodyText, resetsAtMs: resetMs };
-    }
-    return { status: 429, message: msg || bodyText };
+ // Per-model frequency limit — honor the upstream reset time so the account
+ // locks until it can actually serve again (capped to 30m downstream).
+ if (numCode === 6004) {
+  const resetMs = parseCodebuddyResetMs(msg);
+  if (resetMs && resetMs > Date.now()) {
+   return { status: 429, message: msg || bodyText, resetsAtMs: resetMs };
   }
+  return { status: 429, message: msg || bodyText };
+ }
 
-  // Credits exhausted — no reset time; lock long immediately (top-up required).
-  if (numCode === 14018 || /credits?\s+exhausted/i.test(msg)) {
-    return {
-      status: 429,
-      message: msg || bodyText,
-      resetsAtMs: Date.now() + CODEBUDDY_EXHAUSTED_COOLDOWN_MS,
-    };
-  }
+ // Credits exhausted — no reset time; lock long immediately (top-up required).
+ if (numCode === 14018 || /credits?\s+exhausted/i.test(msg)) {
+  return {
+   status: 429,
+   message: msg || bodyText,
+   resetsAtMs: Date.now() + CODEBUDDY_EXHAUSTED_COOLDOWN_MS,
+  };
+ }
 
-  return null;
+ // Account restriction (11140): unusual activity flagged by Tencent risk engine.
+ if (numCode === 11140 || /restricted due to unusual activity|账号存在异常行为/i.test(msg)) {
+  const tip = json.displayMsg?.en || json.displayTips?.en || msg;
+  return {
+   status: 403,
+   message: `CodeBuddy account restricted (11140): ${tip || "unusual activity flagged by Tencent risk engine"}.`,
+  };
+ }
+
+ // Channel verification (11128): conversation id or request id missing.
+ if (numCode === 11128 && /conversation id missing/i.test(msg)) {
+  return {
+   status: 400,
+   message: "CodeBuddy channel verification failed (11128): conversation id missing or forged.",
+  };
+ }
+
+ return null;
 }

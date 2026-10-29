@@ -1010,10 +1010,13 @@
     "forceStream": true,
     "thinkingFormat": "openai",
     "headers": {
-      "User-Agent": "IDE/2.108.1 CodeBuddy/2.108.1",
+      "User-Agent": "CodeBuddyIDE/4.12.1 CodeBuddy/1.106.1",
       "X-Product": "SaaS",
-      "X-IDE-Type": "IDE",
-      "X-IDE-Name": "IDE",
+      "X-Product-Version": "1.106.1",
+      "X-IDE-Type": "CodeBuddyIDE",
+      "X-IDE-Name": "CodeBuddyIDE",
+      "X-IDE-Version": "4.12.1",
+      "X-Domain": "www.codebuddy.ai",
       "x-requested-with": "XMLHttpRequest",
       "x-codebuddy-request": "1"
     },

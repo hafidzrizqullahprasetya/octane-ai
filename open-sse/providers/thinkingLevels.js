@@ -74,7 +74,7 @@ const PATTERN_THINKING = [
   // ⚠️ The codebuddy-cn exact ids below MUST stay above this unqualified glob —
   // PATTERN_THINKING is first-match-wins, so a later provider-qualified entry
   // would never fire for dotted ids like deepseek-v4.1-flash.
-  { provider: "codebuddy-cn", pattern: "deepseek-v4-pro",     levels: ["low", "high", "xhigh"] },
+  { provider: "codebuddy-cn", pattern: "deepseek-v4-pro", levels: ["low", "high", "xhigh"] },
   { provider: "codebuddy-cn", pattern: "deepseek-v4.1-flash", levels: ["low", "high", "max"] },
   // OpenCode Zen free tier (oc / ocz) — the free id of the same v4.1-flash model
   // publishes low|high|max as well, and unlike DeepSeek's own API the upstream
@@ -90,13 +90,15 @@ const PATTERN_THINKING = [
   // clamped, so the declared set stays authoritative for the picker. Models
   // that publish no supportedEfforts (glm-5.1 / kimi-k3-1 / minimax-m3)
   // fall through to the openai format default.
-  { provider: "codebuddy-cn", pattern: "glm-5.3",      levels: ["low", "high", "max"] },
+  { provider: "codebuddy-cn", pattern: "glm-5.3", levels: ["low", "high", "max"] },
   { provider: "codebuddy-cn", pattern: "glm-5.3-flash", levels: ["low", "high", "max"] },
-  { provider: "codebuddy-cn", pattern: "glm-5.2",      levels: ["high", "xhigh"] },
-  { provider: "codebuddy-cn", pattern: "kimi-k2.8-preview",  levels: ["low", "medium", "high"] },
-  { provider: "codebuddy-cn", pattern: "hy3",          levels: ["low", "high"] },
-  { provider: "codebuddy-cn", pattern: "hy4-preview",  levels: ["high"] },
+  { provider: "codebuddy-cn", pattern: "glm-5.2", levels: ["high", "xhigh"] },
+  { provider: "codebuddy-cn", pattern: "kimi-k2.8-preview", levels: ["low", "medium", "high"] },
+  { provider: "codebuddy-cn", pattern: "hy3", levels: ["low", "high"] },
+  { provider: "codebuddy-cn", pattern: "hy4-preview", levels: ["high"] },
   // codebuddy-intl rides the same gateway catalog, so its deepseek levels match.
+  { provider: "codebuddy-intl", pattern: "deepseek-v4-pro", levels: ["low", "high", "xhigh"] },
+  { provider: "codebuddy-intl", pattern: "deepseek-v4.1-flash", levels: ["low", "high", "max"] },
   { provider: "codebuddy-intl", pattern: "deepseek-v4*", levels: ["low", "high", "xhigh"] },
   // MiniMax Code (mcode) — adaptive effort via output_config.effort. M3.1
   // always thinks (no none); M3 is switchable with none/high only, per the

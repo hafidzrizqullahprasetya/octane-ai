@@ -1,3 +1,5 @@
+import { CODEBUDDY_CLIENT, codeBuddyUserAgent } from "../../config/codebuddyIdentity.js";
+
 // CodeBuddy international (codebuddy.ai) — mirrors codebuddy-cn registry shape,
 // swapping the Tencent CN domain for the .ai endpoint set. All OAuth/plugin URLs
 // use the /v2/plugin prefix with platform=ide (CN uses platform=CLI).
@@ -26,10 +28,13 @@ export default {
     // CodeBuddy intl speaks the same unified OpenAI reasoning_effort shape as CN.
     thinkingFormat: "openai",
     headers: {
-      "User-Agent": "IDE/2.108.1 CodeBuddy/2.108.1",
-      "X-Product": "SaaS",
-      "X-IDE-Type": "IDE",
-      "X-IDE-Name": "IDE",
+      "User-Agent": codeBuddyUserAgent(),
+      "X-Product": CODEBUDDY_CLIENT.deploymentType,
+      "X-Product-Version": CODEBUDDY_CLIENT.productVersion,
+      "X-IDE-Type": CODEBUDDY_CLIENT.platform,
+      "X-IDE-Name": CODEBUDDY_CLIENT.platform,
+      "X-IDE-Version": CODEBUDDY_CLIENT.platformVersion,
+      "X-Domain": CODEBUDDY_CLIENT.domain,
       "x-requested-with": "XMLHttpRequest",
       "x-codebuddy-request": "1",
     },
