@@ -421,7 +421,9 @@ function enforceTypeConstraints(obj) {
     }
   }
 
-  if (obj.type === "array") {
+  const typeLower = (obj.type || "").toLowerCase();
+
+  if (typeLower === "array") {
     delete obj.properties;
     delete obj.required;
     if (!obj.items || typeof obj.items !== "object" || Object.keys(obj.items).length === 0) {
@@ -440,7 +442,7 @@ function enforceTypeConstraints(obj) {
     delete obj.items;
   }
 
-  if (obj.type !== "object") {
+  if (typeLower !== "object") {
     delete obj.properties;
     delete obj.required;
   }

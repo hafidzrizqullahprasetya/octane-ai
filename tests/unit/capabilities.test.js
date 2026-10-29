@@ -30,7 +30,7 @@ describe("getCapabilitiesForModel", () => {
   };
 
   const kiroGpt56Expected = {
-    contextWindow: 1000000,
+    contextWindow: 272000,
     maxOutput: 128000,
     thinkingFormat: "openai",
     reasoning: true,
