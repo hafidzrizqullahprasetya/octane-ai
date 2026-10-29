@@ -73,6 +73,9 @@ export const ERROR_RULES = [
   { text: "11135",                     noFallback: true },
   // --- Text-based rules (checked after no-fallback, order = priority) ---
   { provider: "codex", text: "model is not supported when using codex with a chatgpt account", cooldownMs: MAX_RATE_LIMIT_COOLDOWN_MS },
+  // Intl gateway blocks affect the account/IP, so let the connection back off.
+  { provider: "codebuddy-intl", text: "request illegal", backoff: true },
+  { provider: "codebuddy-intl", text: "conversation id missing", backoff: true },
   { text: "no credentials",           cooldownMs: COOLDOWN.long },
   { text: "request not allowed",      cooldownMs: COOLDOWN.short },
   { text: "improperly formed request", cooldownMs: COOLDOWN.long },
@@ -88,6 +91,8 @@ export const ERROR_RULES = [
   // seconds — lock long immediately. Mirrors MAX_RATE_LIMIT_COOLDOWN_MS.
   { text: "credits exhausted",        cooldownMs: 30 * 60 * 1000 },
   { text: "insufficient credits",     cooldownMs: 30 * 60 * 1000 },
+  { text: "insufficient credit",      backoff: true },
+  { text: "credit balance is too low", backoff: true },
   // Gateway billing-hold states: akun sedang di-hold reservasi/billing di sisi gateway.
   // Lock panjang supaya akun yang di-hold tidak terus-terusan dipukul.
   { text: "available credits cannot cover", cooldownMs: 30 * 60 * 1000, noLock: true },

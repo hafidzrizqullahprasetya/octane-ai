@@ -33,17 +33,22 @@ export default function ConnectionRow({ connection, proxyPools, isOAuth, isFirst
   }, [connection]);
 
   const proxyPoolMap = new Map((proxyPools || []).map((pool) => [pool.id, pool]));
+  // Saved single-pool binding (legacy single-select) falls back to first of the
+  // fork's multi-selection so render reflects whatever is persisted.
+  const boundProxyPoolId = connection.providerSpecificData?.proxyPoolId || selectedProxyIds[0] || null;
+  const boundProxyPool = boundProxyPoolId ? proxyPoolMap.get(boundProxyPoolId) : null;
   
   // Display logic - support both new (multi-proxy) and legacy (single proxy) formats
   const hasLegacyProxy = connection.providerSpecificData?.connectionProxyEnabled === true && !!connection.providerSpecificData?.connectionProxyUrl;
-  const hasAnyProxy = selectedProxyIds.length > 0 || hasLegacyProxy;
+  const hasAnyProxy = selectedProxyIds.length > 0 || !!boundProxyPoolId || hasLegacyProxy;
   
   const getProxyDisplayText = () => {
-    if (selectedProxyIds.length === 0 && !hasLegacyProxy) return "";
+    if (selectedProxyIds.length === 0 && !boundProxyPoolId && !hasLegacyProxy) return "";
     
-    if (selectedProxyIds.length === 1) {
-      const pool = proxyPoolMap.get(selectedProxyIds[0]);
-      return pool ? `Pool: ${pool.name}` : `Pool: ${selectedProxyIds[0]} (inactive/missing)`;
+    if (selectedProxyIds.length === 1 || (!selectedProxyIds.length && boundProxyPoolId)) {
+      const pid = selectedProxyIds[0] || boundProxyPoolId;
+      const pool = proxyPoolMap.get(pid);
+      return pool ? `Pool: ${pool.name}` : `Pool: ${pid} (inactive/missing)`;
     }
     
     if (selectedProxyIds.length > 1) {
@@ -392,8 +397,12 @@ export default function ConnectionRow({ connection, proxyPools, isOAuth, isFirst
                 </span>
                 <span className="text-[10px] leading-tight">Proxy</span>
               </button>
-              {showProxyDropdown && (
-                <div className="absolute left-0 top-full z-50 mt-1 max-w-[calc(100vw-2rem)] min-w-[280px] rounded-lg border border-border bg-bg shadow-lg sm:left-auto sm:right-0">
+              {showProxyDropdown && createPortal(
+                <div
+                  ref={proxyDropdownRef}
+                  style={proxyDropdownStyle}
+                  className="z-50 max-w-[calc(100vw-2rem)] min-w-[280px] overflow-y-auto rounded-lg border border-border bg-bg shadow-lg"
+                >
                   {/* Rotation Strategy Selector */}
                   <div className="border-b border-border p-3">
                     <label className="block text-xs font-medium text-text-muted mb-2">Rotation Strategy</label>
@@ -434,7 +443,6 @@ export default function ConnectionRow({ connection, proxyPools, isOAuth, isFirst
                         <span>None</span>
                       </div>
                     </button>
-                    
                     {/* Select All Button (only for rotation strategies) */}
                     {rotationStrategy !== "none" && (
                       <button
@@ -443,7 +451,7 @@ export default function ConnectionRow({ connection, proxyPools, isOAuth, isFirst
                             .filter(pool => pool.isActive === true)
                             .map(pool => pool.id);
                           const allSelected = activePoolIds.length > 0 && activePoolIds.every(id => selectedProxyIds.includes(id));
-                          
+
                           if (allSelected) {
                             setSelectedProxyIds([]);
                           } else {
@@ -463,7 +471,7 @@ export default function ConnectionRow({ connection, proxyPools, isOAuth, isFirst
                         </div>
                       </button>
                     )}
-                    
+
                     {(proxyPools || []).map((pool) => {
                       const isSelected = selectedProxyIds.includes(pool.id);
                       const isActive = pool.isActive === true;
@@ -481,7 +489,7 @@ export default function ConnectionRow({ connection, proxyPools, isOAuth, isFirst
                         >
                           <div className="flex items-center gap-2">
                             <span className="material-symbols-outlined text-[16px]">
-                              {rotationStrategy === "none" 
+                              {rotationStrategy === "none"
                                 ? (isSelected ? "radio_button_checked" : "radio_button_unchecked")
                                 : (isSelected ? "check_box" : "check_box_outline_blank")
                               }
@@ -506,7 +514,8 @@ export default function ConnectionRow({ connection, proxyPools, isOAuth, isFirst
                       {updatingProxy ? "Applying..." : "Apply"}
                     </button>
                   </div>
-                </div>
+                </div>,
+                document.body
               )}
             </div>
           )}

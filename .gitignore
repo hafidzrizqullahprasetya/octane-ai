@@ -117,3 +117,4 @@ bai/
 .start-dev.ps1
 start-dev-silent.cjs
 debug.log
+.scratch/

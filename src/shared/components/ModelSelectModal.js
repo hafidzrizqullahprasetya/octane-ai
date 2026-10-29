@@ -153,9 +153,13 @@ export default function ModelSelectModal({
     return map;
   }, [filteredActiveProviders]);
   const cursorConnectionIds = liveConnectionIdsByProvider.cursor;
+  const clineConnectionIds = liveConnectionIdsByProvider.cline;
+  const clinepassConnectionIds = liveConnectionIdsByProvider.clinepass;
   const zedConnectionIds = liveConnectionIdsByProvider.zed;
 
   const cursorModels = useLiveProviderModels(isOpen, cursorConnectionIds, "Cursor");
+  const clineModels = useLiveProviderModels(isOpen, clineConnectionIds, "Cline");
+  const clinepassModels = useLiveProviderModels(isOpen, clinepassConnectionIds, "ClinePass");
   const zedModels = useLiveProviderModels(isOpen, zedConnectionIds, "Zed");
 
   const fetchCombos = async () => {
@@ -231,7 +235,7 @@ export default function ModelSelectModal({
     // Kinds where the provider IS the model (no per-model selection needed)
     const PROVIDER_AS_MODEL_KINDS = new Set(["webSearch", "webFetch"]);
     // Kinds that map directly to model.type field
-    const TYPED_KINDS = new Set(["image", "tts", "stt", "embedding", "imageToText"]);
+    const TYPED_KINDS = new Set(["image", "tts", "stt", "embedding", "imageToText", "systemone"]);
     // For these kinds, providers without hardcoded models can still be picked (provider-as-model fallback)
     const ALLOW_PROVIDER_FALLBACK_KINDS = new Set(["tts", "image", "webFetch"]);
 
@@ -407,7 +411,7 @@ export default function ModelSelectModal({
           hasModels: mergedModels.length > 0,
         };
       } else {
-        const liveModels = providerId === "cursor" ? cursorModels : providerId === "zed" ? zedModels : [];
+        const liveModels = providerId === "cursor" ? cursorModels : providerId === "cline" ? clineModels : providerId === "clinepass" ? clinepassModels : providerId === "zed" ? zedModels : [];
         const hardcodedModels = liveModels.length > 0
           ? liveModels
           : getModelsByProviderId(providerId);
