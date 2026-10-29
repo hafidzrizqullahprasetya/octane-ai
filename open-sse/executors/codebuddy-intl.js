@@ -101,15 +101,33 @@ export class CodeBuddyIntlExecutor extends DefaultExecutor {
   // CodeBuddy rejects plain OpenAI shape (11101 invalid request): needs a
   // leading system prompt + user content as typed blocks, not a bare string.
   const source = Array.isArray(transformed.messages) ? transformed.messages : [];
-  transformed.messages = [{ role: "system", content: "You are CodeBuddy Code." }];
+  const systemParts = ["You are CodeBuddy Code."];
+  const userMessages = [];
+
+  const AGENT_PATTERN = /you are claude code|claude.?code.+official.+cli|anthropic.+official.+cli|anxthxropic.+official.+cli|you are (?:cursor|windsurf|cline|aider|continue|copilot|cody)|cc_entrypoint\s*=\s*(?:cli|vscode|jetbrains|gui)|claude.?code.+issues|give feedback.+claude.?code|OhMyOpenCode/gi;
+
   for (const message of source) {
-   if (!message || typeof message !== "object" || ["system", "developer"].includes(message.role)) continue;
+   if (!message || typeof message !== "object") continue;
+   if (["system", "developer"].includes(message.role)) {
+    const text = typeof message.content === "string"
+     ? message.content
+     : Array.isArray(message.content)
+      ? message.content.map(b => (b && typeof b.text === "string" ? b.text : "")).join("\n")
+      : "";
+    const cleaned = text.replace(AGENT_PATTERN, "[external-client-identity]").trim();
+    if (cleaned && !systemParts.includes(cleaned)) {
+     systemParts.push(cleaned);
+    }
+    continue;
+   }
    if (message.role === "user" && typeof message.content === "string") {
-    transformed.messages.push({ ...message, content: [{ type: "text", text: message.content }] });
+    userMessages.push({ ...message, content: [{ type: "text", text: message.content }] });
    } else {
-    transformed.messages.push({ ...message });
+    userMessages.push({ ...message });
    }
   }
+
+  transformed.messages = [{ role: "system", content: systemParts.join("\n\n") }, ...userMessages];
 
   return transformed;
  }

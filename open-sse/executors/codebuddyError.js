@@ -28,14 +28,32 @@ export const CODEBUDDY_EXHAUSTED_COOLDOWN_MS = 30 * 60 * 1000;
  * @returns {number|null} UTC epoch ms, or null when not found/unparsable.
  */
 export function parseCodebuddyResetMs(text) {
- const m = String(text || "").match(
+ const str = String(text || "");
+ const m = str.match(
   /reset at (\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})\s*UTC\s*([+-])\s*(\d{1,2})(?::?(\d{2}))?/i
  );
- if (!m) return null;
- const [, Y, Mo, D, h, mi, s, sign, oh, om] = m;
- const offMin = (parseInt(oh, 10) * 60 + parseInt(om || "0", 10)) * (sign === "-" ? -1 : 1);
- const utcMs = Date.UTC(+Y, +Mo - 1, +D, +h, +mi, +s) - offMin * 60 * 1000;
- return Number.isFinite(utcMs) ? utcMs : null;
+ if (m) {
+  const [, Y, Mo, D, h, mi, s, sign, oh, om] = m;
+  const offMin = (parseInt(oh, 10) * 60 + parseInt(om || "0", 10)) * (sign === "-" ? -1 : 1);
+  const utcMs = Date.UTC(+Y, +Mo - 1, +D, +h, +mi, +s) - offMin * 60 * 1000;
+  if (Number.isFinite(utcMs)) return utcMs;
+ }
+
+ const match = str.match(
+  /(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})(?:\s*UTC\+?([0-9:]+))?/i
+ );
+ if (match) {
+  const dateStr = match[1];
+  const timeStr = match[2];
+  const tzOffset = match[3]
+   ? (match[3].includes(":")
+    ? (match[3].startsWith("+") || match[3].startsWith("-") ? match[3] : `+${match[3]}`)
+    : (match[3].startsWith("+") || match[3].startsWith("-") ? `${match[3].slice(0, 1)}${match[3].slice(1).padStart(2, "0")}:00` : `+${match[3].padStart(2, "0")}:00`))
+   : "+08:00";
+  const parsedDate = new Date(`${dateStr}T${timeStr}${tzOffset}`);
+  if (!isNaN(parsedDate.getTime())) return parsedDate.getTime();
+ }
+ return null;
 }
 
 function tryParseJson(bodyText) {
@@ -71,9 +89,9 @@ export function parseCodebuddyError(response, bodyText) {
 
  // Per-model frequency limit — honor the upstream reset time so the account
  // locks until it can actually serve again (capped to 30m downstream).
- if (numCode === 6004) {
+ if (numCode === 6004 || /超出频率限制|frequency limit|限额/i.test(msg)) {
   const resetMs = parseCodebuddyResetMs(msg);
-  if (resetMs && resetMs > Date.now()) {
+  if (resetMs) {
    return { status: 429, message: msg || bodyText, resetsAtMs: resetMs };
   }
   return { status: 429, message: msg || bodyText };

@@ -20,7 +20,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-10-22T00:00:00.000Z"));
-  vi.spyOn(console, "error").mockImplementation(() => {});
+  vi.spyOn(console, "error").mockImplementation(() => { });
   db.getProviderConnections.mockResolvedValue([{ id: "cb-account", backoffLevel: 2 }]);
 });
 afterEach(() => {
@@ -33,6 +33,10 @@ describe("CodeBuddy Intl block backoff (#5024)", () => {
     expect(checkFallbackError(400, { code: 11128, msg }, 0, "codebuddy-intl")).toEqual({
       shouldFallback: true, cooldownMs: BACKOFF_CONFIG.base, newBackoffLevel: 1,
     });
+  });
+  it("marks 11140 account restricted with zero cooldown (no fake reset timer)", () => {
+    expect(checkFallbackError(403, "CodeBuddy account restricted (11140): unusual activity", 0, "codebuddy-intl"))
+      .toEqual({ shouldFallback: true, cooldownMs: 0 });
   });
 
   it("increases repeated block cooldowns and respects the existing cap", () => {
