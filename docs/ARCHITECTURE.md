@@ -76,7 +76,7 @@ Alur kerja pemrosesan request chat:
 1. **Model Resolution**: Mengurai alias model (`parseModel`) ke pasangan `provider/model`.
 2. **Pre-Translate Hooks (`rtk/`)**:
    - Kompresi payload hasil alat (`tool_result`) secara in-place.
-   - Pengecekan persona aktif (misal `BOZ-GEMINI` atau `BOZ-MUSE`) melalui `caveman.js` / injector persona.
+   - Injeksi prompt sistem cerdas (misal `caveman.js` / `ponytail.js` / `customPrompt.js`).
 3. **Executor Dispatch**: Memilih executor yang cocok (`getExecutor(provider)`). Menggunakan `DefaultExecutor` untuk provider OpenAI-compatible atau executor khusus (misal `kiro`, `cursor`, `antigravity`, `codex`).
 4. **Request Translation**: Mentranslasi format input klien ke format yang diharapkan oleh provider upstream melalui format OpenAI sebagai jembatan atau direct route.
 5. **Streaming Execution**: Menghubungi provider upstream dan membaca chunk respon SSE secara real-time.
