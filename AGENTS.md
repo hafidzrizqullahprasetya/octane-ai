@@ -80,7 +80,7 @@ node scripts/verify-lockfile-npm10.mjs   # must print ✅
 | **Freebuff provider** | `open-sse/executors/freebuff.js`, `open-sse/providers/registry/freebuff.js`, `open-sse/services/usage/freebuff.js`, `src/lib/oauth/providers/freebuff.js`, `public/providers/freebuff.png` |
 | **Perch-CLI provider** | `open-sse/executors/perch-cli.js`, `open-sse/providers/registry/perch-cli.js`, `src/lib/oauth/providers/perch.js`, `public/providers/perch-cli.png` |
 | **Proxy-pool fitness** | `open-sse/services/proxyPoolFitness.js`, `open-sse/services/poolGeo.js`, `src/lib/network/poolEgressProbe.js`, `src/lib/network/stateSweeper.js`, `src/app/(dashboard)/dashboard/proxy-fitness/`, `src/app/api/proxy-pools/**` |
-| **Docker hardening** | `Dockerfile`: digest-pinned `NODE_IMAGE`, tracked `package-lock.json`, `npm ci`, `HEALTHCHECK`. `.github/workflows/docker-publish.yml`. |
+| **Docker hardening** | `Dockerfile`: digest-pinned `NODE_IMAGE`, tracked `package-lock.json`, `npm ci`, `HEALTHCHECK`. |
 | **Cline free-tier models** | `open-sse/providers/registry/cline.js` `authModes: ["oauth","apikey"]` + `cline-free/*` models; `open-sse/shared/clineAuth.js` |
 
 ---
@@ -94,6 +94,14 @@ builder stage (after `COPY . .`, before `npm run build`). **DO NOT** delete
 ```bash
 node scripts/verify-no-undef.mjs   # must print ✅
 ```
+
+---
+
+### 7. Octane workflow (solo dev, no CI)
+
+- Single branch: work and commit directly on `main`. Use a short-lived branch only for risky changes, then merge and delete it.
+- No GitHub Actions deploy. Build and run locally: `docker compose up -d --build octane-ai`. Image name is local (`octane-ai:local`); there is no registry push and no watchtower.
+- Upstream sync: merge `decolua/master` first, then `upstream/master` (MIBP), one at a time. `git rerere` is enabled locally so repeated conflict resolutions are replayed automatically.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
