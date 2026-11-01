@@ -10,6 +10,10 @@ let cached = null;
 
 export function getWritableDataDir() {
   if (cached) return cached;
+  if (process.env.NEXT_PHASE === "phase-production-build") {
+    cached = fs.mkdtempSync(path.join(os.tmpdir(), "9router-build-"));
+    return cached;
+  }
   const candidates = [
     process.env.DATA_DIR,
     path.join(os.homedir(), ".9router"),

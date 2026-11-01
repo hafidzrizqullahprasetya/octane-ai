@@ -11,7 +11,16 @@ function defaultDir() {
   return path.join(os.homedir(), `.${APP_NAME}`);
 }
 
+let buildDataDir = null;
+
 function getDataDir() {
+  if (process.env.NEXT_PHASE === "phase-production-build") {
+    if (!buildDataDir || !fs.existsSync(buildDataDir)) {
+      buildDataDir = fs.mkdtempSync(path.join(os.tmpdir(), "9router-build-"));
+    }
+    return buildDataDir;
+  }
+
   const configured = process.env.DATA_DIR;
   if (!configured) return defaultDir();
   try {

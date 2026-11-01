@@ -103,6 +103,21 @@ node scripts/verify-no-undef.mjs   # must print ✅
 - No GitHub Actions deploy. Build and run locally: `docker compose up -d --build octane-ai`. Image name is local (`octane-ai:local`); there is no registry push and no watchtower.
 - Upstream sync: merge `decolua/master` first, then `upstream/master` (MIBP), one at a time. `git rerere` is enabled locally so repeated conflict resolutions are replayed automatically.
 
+---
+
+### 8. Host builds/scripts must never touch the real data dir
+
+**DO NOT** remove the build-phase guard in `src/lib/dataDir.js` /
+`open-sse/utils/writableDataDir.js`. **DO NOT** delete
+`tests/unit/build-phase-data-dir.test.js`.
+
+**WHY:** A host `npm run build` once created a stray `~/.9router` DB, and in
+the main checkout `.env` (`DATA_DIR=./data`) would make it open the live
+container DB.
+
+Also: agents running ad-hoc node scripts on the host that import `src/lib/db`
+must set `DATA_DIR=$(mktemp -d)`.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 ## This is NOT the Next.js you know

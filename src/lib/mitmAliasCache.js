@@ -3,21 +3,19 @@
 // and after every UI write.
 import fs from "fs";
 import path from "path";
-import os from "os";
+import { getDataDir } from "./dataDir.js";
 
-const DATA_DIR = process.env.DATA_DIR
-  || (process.platform === "win32"
-    ? path.join(process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming"), "9router")
-    : path.join(os.homedir(), ".9router"));
-
-const CACHE_FILE = path.join(DATA_DIR, "mitm", "aliases.json");
+function getCacheFile() {
+  return path.join(getDataDir(), "mitm", "aliases.json");
+}
 
 function writeAtomic(data) {
-  const dir = path.dirname(CACHE_FILE);
+  const cacheFile = getCacheFile();
+  const dir = path.dirname(cacheFile);
   fs.mkdirSync(dir, { recursive: true });
-  const tmp = `${CACHE_FILE}.tmp`;
+  const tmp = `${cacheFile}.tmp`;
   fs.writeFileSync(tmp, JSON.stringify(data, null, 2), "utf8");
-  fs.renameSync(tmp, CACHE_FILE);
+  fs.renameSync(tmp, cacheFile);
 }
 
 // Sync entire mitmAlias map from DB → JSON file
@@ -35,8 +33,9 @@ export async function syncToJson() {
 export function writeAliasForTool(tool, mappings) {
   try {
     let current = {};
-    if (fs.existsSync(CACHE_FILE)) {
-      try { current = JSON.parse(fs.readFileSync(CACHE_FILE, "utf8")); } catch { /* corrupted → reset */ }
+    const cacheFile = getCacheFile();
+    if (fs.existsSync(cacheFile)) {
+      try { current = JSON.parse(fs.readFileSync(cacheFile, "utf8")); } catch { /* corrupted → reset */ }
     }
     current[tool] = mappings || {};
     writeAtomic(current);

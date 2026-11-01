@@ -119,4 +119,13 @@ const nextConfig = {
   }
 };
 
-export default nextConfig;
+const makeConfig = (phase) => {
+  if (phase === "phase-production-build") {
+    // Ensure NEXT_PHASE is set from the earliest config-load step so
+    // getDataDir() / getWritableDataDir() always return throwaway dirs.
+    process.env.NEXT_PHASE = "phase-production-build";
+  }
+  return nextConfig;
+};
+
+export default makeConfig;

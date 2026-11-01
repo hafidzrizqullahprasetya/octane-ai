@@ -4,6 +4,8 @@ import os from "os";
 
 const APP_NAME = "9router";
 
+let buildDataDir = null;
+
 function defaultDir() {
   if (process.platform === "win32") {
     return path.join(process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming"), APP_NAME);
@@ -12,6 +14,13 @@ function defaultDir() {
 }
 
 export function getDataDir() {
+  if (process.env.NEXT_PHASE === "phase-production-build") {
+    if (!buildDataDir || !fs.existsSync(buildDataDir)) {
+      buildDataDir = fs.mkdtempSync(path.join(os.tmpdir(), "9router-build-"));
+    }
+    return buildDataDir;
+  }
+
   const configured = process.env.DATA_DIR;
   if (!configured) return defaultDir();
 
