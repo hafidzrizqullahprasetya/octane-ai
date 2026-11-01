@@ -56,6 +56,16 @@ const MAX_POOL_RETRIES = 2;
  * assistant-message field and answer every turn with a literal "400" body
  * (observed with multi-turn Codex sessions via OpenAI-compatible nodes).
  */
+// An explicit `stream` boolean wins. When the client omits it, follow
+// clientRequestedStreaming: OpenAI Chat Completions and Anthropic Messages
+// default to one JSON body, while Gemini-style clients pick streaming by URL
+// and never send `stream`. Treating an omitted field as streaming broke plain
+// HTTP clients that parse a single JSON response (e.g. uteke fact extraction).
+export function resolveStreamMode(body, clientRequestedStreaming) {
+ if (typeof body?.stream === "boolean") return body.stream;
+ return clientRequestedStreaming;
+}
+
 export function stripContinuityFields(body) {
  if (!body || !Array.isArray(body.messages)) return body;
  for (const msg of body.messages) {
@@ -149,7 +159,7 @@ export async function handleChatCore({ body, modelInfo, credentials, log, onCred
 
  const clientRequestedStreaming = body.stream === true || sourceFormat === FORMATS.ANTIGRAVITY || sourceFormat === FORMATS.GEMINI || sourceFormat === FORMATS.GEMINI_CLI;
  const providerRequiresStreaming = PROVIDERS[provider]?.forceStream === true;
- let stream = providerRequiresStreaming ? true : (body.stream !== false);
+ let stream = providerRequiresStreaming ? true : resolveStreamMode(body, clientRequestedStreaming);
 
  // Image generation models require non-streaming (Google v1internal:generateContent)
  const modelType = getModelType(alias, model);
