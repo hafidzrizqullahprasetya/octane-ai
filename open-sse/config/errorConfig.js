@@ -93,7 +93,6 @@ export const ERROR_RULES = [
  // Top-up-required (e.g. CodeBuddy 14018): no point retrying every few
  // seconds — lock long immediately. Mirrors MAX_RATE_LIMIT_COOLDOWN_MS.
  { text: "credits exhausted", cooldownMs: 30 * 60 * 1000 },
- { text: "insufficient credits", cooldownMs: 30 * 60 * 1000 },
  { text: "insufficient credit", backoff: true },
  { text: "credit balance is too low", backoff: true },
  // Gateway billing-hold states: akun sedang di-hold reservasi/billing di sisi gateway.

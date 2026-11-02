@@ -12,6 +12,12 @@ export function getWritableDataDir() {
   if (cached) return cached;
   if (process.env.NEXT_PHASE === "phase-production-build") {
     cached = fs.mkdtempSync(path.join(os.tmpdir(), "9router-build-"));
+    try {
+      const dir = cached;
+      process.once("exit", () => {
+        try { fs.rmSync(dir, { recursive: true, force: true }); } catch { }
+      });
+    } catch { }
     return cached;
   }
   const candidates = [

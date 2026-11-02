@@ -24,12 +24,12 @@ describe("OpenCode Free Muse Spark thinking", () => {
       expect(getCapabilitiesForModel(PROVIDER, m)).toMatchObject({
         reasoning: true,
         thinkingFormat: "openai",
-        contextWindow: 1000000,
+        contextWindow: 1048576,
         maxOutput: 131072,
       });
       expect(getCapabilitiesForModel(PROVIDER, `oc/${m}`)).toMatchObject({
         reasoning: true,
-        contextWindow: 1000000,
+        contextWindow: 1048576,
         maxOutput: 131072,
       });
       expect(getThinkingLevels(PROVIDER, m)).toEqual([
@@ -65,7 +65,7 @@ describe("OpenCode Free Muse Spark thinking", () => {
   it("routes Union Alpha through Anthropic Messages", () => {
     const caps = getCapabilitiesForModel(PROVIDER, "union-alpha");
     expect(caps.vision).toBe(true);
-    expect(caps.contextWindow).toBe(1000000);
+    expect(caps.contextWindow).toBe(262144);
     expect(caps.maxOutput).toBe(131072);
 
     const executor = new OpenCodeExecutor();

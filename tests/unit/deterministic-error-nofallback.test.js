@@ -22,7 +22,7 @@ describe("Deterministic error no-fallback & capabilities", () => {
     const intlCaps = getCapabilitiesForModel("codebuddy-intl", "deepseek-v4.1-flash");
     expect(intlCaps.vision).toBe(true);
 
-    const cnCaps = getCapabilitiesForModel("codebuddy-cn", "deepseek-v4-flash");
+    const cnCaps = getCapabilitiesForModel("codebuddy-cn", "deepseek-v4.1-flash");
     expect(cnCaps.vision).toBe(true);
   });
 

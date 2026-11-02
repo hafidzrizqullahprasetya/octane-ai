@@ -24,6 +24,8 @@ import { dedupeTools } from "../utils/toolDeduper.js";
 import { takeRenamedToolNames } from "../utils/opencodeFingerprint.js";
 import { injectCaveman } from "../rtk/caveman.js";
 import { injectPonytail } from "../rtk/ponytail.js";
+import { injectModelPersona } from "../rtk/persona.js";
+import { resolveModelPersona } from "../config/personaPrompts.js";
 import { injectCustomPrompt } from "../rtk/customPrompt.js";
 import { compressMessages, formatRtkLog } from "../rtk/index.js";
 import { compressWithHeadroom, formatHeadroomLog, formatHeadroomSizeLog, isHeadroomPhantomSavings } from "../rtk/headroom.js";
@@ -77,7 +79,7 @@ export function stripContinuityFields(body) {
  return body;
 }
 
-export async function handleChatCore({ body, modelInfo, credentials, log, onCredentialsRefreshed, onRequestSuccess, onDisconnect, clientRawRequest, connectionId, userAgent, apiKey, ccFilterNaming, rtkEnabled, headroomEnabled, headroomUrl, headroomCompressUserMessages, headroomTimeoutMs, cavemanEnabled, cavemanLevel, ponytailEnabled, ponytailLevel, customPromptEnabled, customPrompt, pxpipeEnabled, pxpipeMinChars, pxpipeTimeoutMs, pxpipeTransform, onPxpipeEvent, sourceFormatOverride, providerThinking, resolveProxyConfig, providerOverrides }) {
+export async function handleChatCore({ body, modelInfo, credentials, log, onCredentialsRefreshed, onRequestSuccess, onDisconnect, clientRawRequest, connectionId, userAgent, apiKey, ccFilterNaming, rtkEnabled, headroomEnabled, headroomUrl, headroomCompressUserMessages, headroomTimeoutMs, cavemanEnabled, cavemanLevel, ponytailEnabled, ponytailLevel, modelPersonaEnabled, customPromptEnabled, customPrompt, pxpipeEnabled, pxpipeMinChars, pxpipeTimeoutMs, pxpipeTransform, onPxpipeEvent, sourceFormatOverride, providerThinking, resolveProxyConfig, providerOverrides }) {
  const { provider, model } = modelInfo;
  const requestStartTime = Date.now();
  // Stable per-session color so all lines of one CLI conversation share a tag
@@ -324,6 +326,15 @@ export async function handleChatCore({ body, modelInfo, credentials, log, onCred
  if (tokenSaverEnabled && ponytailEnabled && ponytailLevel) {
   injectPonytail(translatedBody, finalFormat, ponytailLevel);
   xf.push(`PONYTAIL:${ponytailLevel}`);
+ }
+ // Model persona: inject BOZAGENTIC persona prompt for matched models (fail-open,
+ // injectSystemPrompt never throws). Independent of token-saver flags.
+ if (modelPersonaEnabled) {
+  const persona = resolveModelPersona(alias, model);
+  if (persona) {
+   injectModelPersona(translatedBody, finalFormat, persona);
+   xf.push(`PERSONA:${persona.id}`);
+  }
  }
 
  // Custom prompt: user-authored instruction, independent of the savers above

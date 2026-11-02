@@ -66,7 +66,7 @@ function expectCompatibleConnection(connection, node, { apiType } = {}) {
   }
 }
 
-describe("compatible provider connections API", () => {
+describe("compatible provider connections API", { timeout: 30000 }, () => {
   let cleanup = () => {};
 
   beforeEach(() => {

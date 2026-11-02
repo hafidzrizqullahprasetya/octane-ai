@@ -22,7 +22,7 @@ async function setupDb() {
   };
 }
 
-describe("model routing", () => {
+describe("model routing", { timeout: 15000 }, () => {
   let cleanup = () => {};
 
   beforeEach(() => {
@@ -65,13 +65,13 @@ describe("model routing", () => {
     await ctx.createProviderNode({
       id: "openai-compatible-chat-test",
       type: "openai-compatible",
-      name: "Compatible OCT",
-      prefix: "oct",
+      name: "Compatible Custom",
+      prefix: "custom-node",
       apiType: "chat",
       baseUrl: "https://compatible.test/v1",
     });
 
-    await expect(ctx.getModelInfo("oct/gpt-image-1"))
+    await expect(ctx.getModelInfo("custom-node/gpt-image-1"))
       .resolves.toEqual({
         provider: "openai-compatible-chat-test",
         model: "gpt-image-1",

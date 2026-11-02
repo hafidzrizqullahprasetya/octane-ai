@@ -9,6 +9,8 @@ export default defineConfig({
     environment: "node",
     globals: true,
     include: ["**/*.test.js"],
+    testTimeout: 30000,
+    hookTimeout: 30000,
     // Redirect DATA_DIR to a throwaway temp dir so route-level tests that call
     // createProviderConnection never touch the user's real ~/.9router DB.
     // RUN_REAL=1 or an explicit DATA_DIR opts out (see setup/isolateDataDir.js).

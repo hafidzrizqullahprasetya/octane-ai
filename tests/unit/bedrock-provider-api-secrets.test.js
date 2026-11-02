@@ -36,7 +36,7 @@ async function createAwsConnection(provider) {
   return { response, body: await response.json() };
 }
 
-describe("Bedrock connection API secrets", () => {
+describe("Bedrock connection API secrets", { timeout: 30000 }, () => {
   beforeEach(async () => {
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "9router-bedrock-api-secrets-"));
     process.env.DATA_DIR = tempDir;

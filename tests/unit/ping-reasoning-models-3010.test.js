@@ -35,14 +35,14 @@ describe("pingModelByKind reasoning models (#3010)", () => {
     };
   }
 
-  it("uses a 1024-token budget for the chat completions probe", async () => {
+  it("uses a 2048-token budget for the chat completions probe", async () => {
     fetchMock.mockResolvedValue(jsonResponse({ choices: [{ message: { content: "Hi there!" } }] }));
 
     await pingModelByKind("cline-pass/kimi-k3", "llm", "http://127.0.0.1:20127");
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const body = JSON.parse(fetchMock.mock.calls[0][1].body);
-    expect(body.max_tokens).toBe(1024);
+    expect(body.max_tokens).toBe(2048);
   });
 
   it("treats a reasoning-only (length-limited) response as ok:true", async () => {

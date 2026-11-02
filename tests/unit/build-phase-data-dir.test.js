@@ -35,6 +35,7 @@ describe("build-phase data directory guard", () => {
     expect(dir.startsWith(os.tmpdir())).toBe(true);
     expect(DATA_DIR).toBe(dir);
     expect(fs.existsSync(fakeDataDir)).toBe(false);
+    try { fs.rmSync(dir, { recursive: true, force: true }); } catch { }
   });
 
   it("src/lib/dataDir.js: returns DATA_DIR when not in build phase", async () => {
@@ -64,6 +65,7 @@ describe("build-phase data directory guard", () => {
     expect(path.resolve(dir)).not.toBe(path.resolve(fakeDataDir));
     expect(dir.startsWith(os.tmpdir())).toBe(true);
     expect(fs.existsSync(fakeDataDir)).toBe(false);
+    try { fs.rmSync(dir, { recursive: true, force: true }); } catch { }
   });
 
   it("open-sse/utils/writableDataDir.js: returns DATA_DIR when not in build phase", async () => {

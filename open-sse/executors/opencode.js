@@ -406,6 +406,8 @@ export class OpenCodeExecutor extends BaseExecutor {
   }
 
   transformRequest(model, body, stream, credentials) {
+    // Copy-on-write: normalize a shallow copy, never the caller's body.
+    if (body && typeof body === "object") body = { ...body };
     if (body && typeof body === "object" && model && !body.model) body.model = model;
     // Zen rejects non-streaming requests on free models with 403 FreeTierError;
     // always stream upstream and let the handler layer aggregate for non-stream clients.

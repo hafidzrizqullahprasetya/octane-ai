@@ -17,6 +17,12 @@ function getDataDir() {
   if (process.env.NEXT_PHASE === "phase-production-build") {
     if (!buildDataDir || !fs.existsSync(buildDataDir)) {
       buildDataDir = fs.mkdtempSync(path.join(os.tmpdir(), "9router-build-"));
+      try {
+        const dir = buildDataDir;
+        process.once("exit", () => {
+          try { fs.rmSync(dir, { recursive: true, force: true }); } catch {}
+        });
+      } catch {}
     }
     return buildDataDir;
   }

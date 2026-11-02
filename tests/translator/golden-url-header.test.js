@@ -33,7 +33,14 @@ const SPECIALIZED = new Set([
 ]);
 
 // Per-process / per-request values: kimi's random device name, minimax's session UUID.
-const VOLATILE_HEADERS = new Set(["x-msh-device-name", "x-mavis-session-id"]);
+const VOLATILE_HEADERS = new Set([
+  "x-msh-device-name",
+  "x-mavis-session-id",
+  "x-conversation-id",
+  "x-conversation-message-id",
+  "x-conversation-request-id",
+  "x-request-id",
+]);
 
 // Machine-derived values: OS/arch (kimi device model) and local timezone
 // (minimax session offset). Normalised so the snapshot is portable.

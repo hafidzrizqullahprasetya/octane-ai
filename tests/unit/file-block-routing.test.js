@@ -20,7 +20,7 @@ describe("file/document block support", () => {
     ]);
     const inline = parts.find((p) => p.inlineData);
     expect(inline).toBeTruthy();
-    expect(inline.inlineData.mime_type).toBe("application/pdf");
+    expect(inline.inlineData.mimeType).toBe("application/pdf");
     expect(inline.inlineData.data).toBe("JVBERi0xLjE=");
   });
 
@@ -33,10 +33,12 @@ describe("file/document block support", () => {
 
   it("claude: openai file (pdf) -> document block", () => {
     const out = openaiToClaudeRequest("claude-x", {
-      messages: [{ role: "user", content: [
+      messages: [{
+        role: "user", content: [
         { type: "text", text: "read" },
         { type: "file", file: { filename: "d.pdf", file_data: PDF_DATA } },
-      ] }],
+        ]
+      }],
     }, false);
     const blocks = out.messages[0].content;
     const doc = blocks.find((b) => b.type === "document");
@@ -46,10 +48,12 @@ describe("file/document block support", () => {
 
   it("claude: non-pdf file is dropped (not a document)", () => {
     const out = openaiToClaudeRequest("claude-x", {
-      messages: [{ role: "user", content: [
+      messages: [{
+        role: "user", content: [
         { type: "text", text: "read" },
         { type: "file", file: { filename: "i.png", file_data: PNG_DATA } },
-      ] }],
+        ]
+      }],
     }, false);
     const blocks = out.messages[0].content;
     expect(blocks.some((b) => b.type === "document")).toBe(false);

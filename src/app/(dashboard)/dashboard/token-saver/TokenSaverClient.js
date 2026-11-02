@@ -45,6 +45,7 @@ export default function TokenSaverClient() {
   const [cavemanLevel, setCavemanLevel] = useState("full");
   const [ponytailEnabled, setPonytailEnabled] = useState(false);
   const [ponytailLevel, setPonytailLevel] = useState("full");
+  const [modelPersonaEnabled, setModelPersonaEnabled] = useState(false);
   const [customPromptEnabled, setCustomPromptEnabled] = useState(false);
   const [customPrompt, setCustomPrompt] = useState("");
   const [pxpipeEnabled, setPxpipeEnabled] = useState(false);
@@ -356,6 +357,11 @@ export default function TokenSaverClient() {
     patchSetting({ ponytailLevel: level });
   };
 
+  const handleModelPersonaEnabled = (value) => {
+    setModelPersonaEnabled(value);
+    patchSetting({ modelPersonaEnabled: value });
+  };
+
   const handleCustomPromptEnabled = (value) => {
     setCustomPromptEnabled(value);
     patchSetting({ customPromptEnabled: value });
@@ -441,6 +447,7 @@ export default function TokenSaverClient() {
           setCavemanLevel(data.cavemanLevel || "full");
           setPonytailEnabled(!!data.ponytailEnabled);
           setPonytailLevel(data.ponytailLevel || "full");
+          setModelPersonaEnabled(!!data.modelPersonaEnabled);
           setCustomPromptEnabled(!!data.customPromptEnabled);
           setCustomPrompt(data.customPrompt || "");
           setPxpipeEnabled(!!data.pxpipeEnabled);
@@ -785,6 +792,22 @@ export default function TokenSaverClient() {
             </p>
           </div>
         )}
+        <div className="flex items-center justify-between pt-4 mt-4 border-t border-border gap-4 flex-wrap">
+          <div className="min-w-0 flex-1">
+            <p className="font-medium">
+              Model Personas
+            </p>
+            <p className="text-sm text-text-muted">
+              Auto-inject system persona prompts for matched models (BOZ-MUSE for Muse Spark & BOZ-GEMINI for Gemini 3.8 Flash)
+            </p>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <Toggle
+              checked={modelPersonaEnabled}
+              onChange={() => handleModelPersonaEnabled(!modelPersonaEnabled)}
+            />
+          </div>
+        </div>
         {/* PXPIPE hidden from UI — experimental, not exposed to users yet */}
         {false && (
         <div className="flex items-center justify-between pt-4 mt-4 border-t border-border gap-4 flex-wrap">

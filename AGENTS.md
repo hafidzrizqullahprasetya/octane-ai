@@ -82,6 +82,7 @@ node scripts/verify-lockfile-npm10.mjs   # must print ✅
 | **Proxy-pool fitness** | `open-sse/services/proxyPoolFitness.js`, `open-sse/services/poolGeo.js`, `src/lib/network/poolEgressProbe.js`, `src/lib/network/stateSweeper.js`, `src/app/(dashboard)/dashboard/proxy-fitness/`, `src/app/api/proxy-pools/**` |
 | **Docker hardening** | `Dockerfile`: digest-pinned `NODE_IMAGE`, tracked `package-lock.json`, `npm ci`, `HEALTHCHECK`. |
 | **Cline free-tier models** | `open-sse/providers/registry/cline.js` `authModes: ["oauth","apikey"]` + `cline-free/*` models; `open-sse/shared/clineAuth.js` |
+| **Model persona injector** | `open-sse/config/personaPrompts.js`, `open-sse/rtk/persona.js`, `open-sse/handlers/chatCore.js`, `src/sse/handlers/chat.js`, `src/lib/db/repos/settingsRepo.js`, `src/app/(dashboard)/dashboard/token-saver/TokenSaverClient.js` |
 
 ---
 

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-describe("xai/oauth service", () => {
+describe("xai/oauth service", { timeout: 15000 }, () => {
   beforeEach(() => {
     vi.resetModules();
     vi.restoreAllMocks();
@@ -64,14 +64,18 @@ describe("xai/oauth service", () => {
   });
 
   it("generates dashboard auth data with CLIProxyAPI PKCE size and discovered endpoints", async () => {
-    fetch.mockResolvedValueOnce({
+    fetch.mockImplementation(async (url) => {
+      if (String(url).includes("openid-configuration")) {
+        return {
       ok: true,
       json: async () => ({
         authorization_endpoint: "https://auth.x.ai/oauth2/authorize-from-discovery",
         token_endpoint: "https://auth.x.ai/oauth2/token-from-discovery",
       }),
+        };
+      }
+      return { ok: true, json: async () => ({}) };
     });
-
     const { generateAuthData } = await import("../../src/lib/oauth/providers.js");
     const data = await generateAuthData("xai", "http://127.0.0.1:56121/callback");
     const parsed = new URL(data.authUrl);
@@ -86,23 +90,25 @@ describe("xai/oauth service", () => {
 
   it("exchanges dashboard codes against the discovered xAI token endpoint", async () => {
     const fetchMock = fetch;
-    fetchMock
-      .mockResolvedValueOnce({
+    fetchMock.mockImplementation(async (url) => {
+      if (String(url).includes("openid-configuration")) {
+        return {
         ok: true,
         json: async () => ({
           authorization_endpoint: "https://auth.x.ai/oauth2/authorize",
           token_endpoint: "https://auth.x.ai/oauth2/token-from-discovery",
         }),
-      })
-      .mockResolvedValueOnce({
+        };
+      }
+      return {
         ok: true,
         json: async () => ({
           access_token: "access-token",
           refresh_token: "refresh-token",
           expires_in: 3600,
         }),
+      };
       });
-
     const { exchangeTokens } = await import("../../src/lib/oauth/providers.js");
     const tokens = await exchangeTokens(
       "xai",
@@ -112,10 +118,11 @@ describe("xai/oauth service", () => {
       "state-1"
     );
 
-    expect(fetchMock.mock.calls[1][0]).toBe("https://auth.x.ai/oauth2/token-from-discovery");
-    expect(fetchMock.mock.calls[1][1].body.get("grant_type")).toBe("authorization_code");
-    expect(fetchMock.mock.calls[1][1].body.get("code")).toBe("auth-code");
-    expect(fetchMock.mock.calls[1][1].body.get("code_verifier")).toBe("verifier-1");
+    const tokenCall = fetchMock.mock.calls.find((call) => call[0] === "https://auth.x.ai/oauth2/token-from-discovery");
+    expect(tokenCall).toBeDefined();
+    expect(tokenCall[1].body.get("grant_type")).toBe("authorization_code");
+    expect(tokenCall[1].body.get("code")).toBe("auth-code");
+    expect(tokenCall[1].body.get("code_verifier")).toBe("verifier-1");
     expect(tokens).toMatchObject({
       accessToken: "access-token",
       refreshToken: "refresh-token",

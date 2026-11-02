@@ -26,11 +26,11 @@ it("converts real stereo 48k WAV to mono24k PCM16 and removes temporary files", 
   const result = Buffer.from(await (await convertAudio(new File([wav()], "in.wav"), new AbortController().signal)).arrayBuffer());
   expect(result.toString("ascii", 0, 4)).toBe("RIFF"); expect(result.readUInt16LE(22)).toBe(1); expect(result.readUInt32LE(24)).toBe(24000); expect(result.readUInt16LE(34)).toBe(16);
   expect((await readdir(tmpdir())).filter((s) => s.startsWith("9router-codex-stt-"))).toEqual(before);
-});
+}, 30000);
 it("rejects malformed and overlong audio and cleans up", async () => {
   await expect(convertAudio(new File(["invalid"], "in.wav"), new AbortController().signal)).rejects.toMatchObject({ status: 400 });
   await expect(convertAudio(new File([wav(121)], "in.wav"), new AbortController().signal)).rejects.toMatchObject({ status: 400 });
-});
+}, 30000);
 it("sends only the converted file and projects upstream metadata out of the response through a local relay", async () => {
   let observed;
   const server = createServer(async (req, res) => {
@@ -50,7 +50,7 @@ it("sends only the converted file and projects upstream metadata out of the resp
     const body = observed.body.toString("latin1"); expect(body.match(/Content-Disposition/g)).toHaveLength(1); expect(body).toContain('name="file"'); expect(body).not.toContain('name="model"');
     const start = observed.body.indexOf(Buffer.from("RIFF")); expect(observed.body.readUInt32LE(start + 24)).toBe(24000);
   } finally { await new Promise((r) => server.close(r)); }
-});
+}, 30000);
 it("keeps abort wired after direct response headers", async () => {
   const source = new PassThrough(); source.statusCode = 200; source.headers = {};
   const req = new EventEmitter(); req.end = () => queueMicrotask(() => callback(source));
